@@ -24,7 +24,11 @@ jobs:
       - name: Install dependencies
         run: |
           pip install pylint
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
+          REQUIREMENTS_FILES=$(find . -name "requirements.txt")
+          for file in $REQUIREMENTS_FILES; do
+            directory=$(dirname $file)
+            pip install -r $file
+          done
 
       - name: Run pylint on Python files
         run: |
