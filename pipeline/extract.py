@@ -1,11 +1,12 @@
 """Script to interact with the Bandcamp API and extract relevant information"""
 from datetime import datetime
+from urllib.request import urlopen
 
 import requests
-from urllib.request import urlopen
 from bs4 import BeautifulSoup
 
 EPOCH = datetime.utcfromtimestamp(0)
+TIMEOUT = 20
 
 
 def unix_time_millis(dt: datetime) -> float:
@@ -21,21 +22,27 @@ def load_sales_data(dt: datetime) -> dict:
     """
     seconds = unix_time_millis(dt) - 60
     response = requests.get(
-        f"https://bandcamp.com/api/salesfeed/1/get?start_date={seconds}")
+        f"https://bandcamp.com/api/salesfeed/1/get?start_date={seconds}", timeout=TIMEOUT)
 
     return response.json()
 
 
-def get_genre_from_url(url: str):
-    page = urlopen(url)
-    html_bytes = page.read()
-    html_doc = html_bytes.decode("utf_8")
+def get_tags_from_url(url: str) -> list[str]:
+    """
+    Given a url for a track, return the associated tags for the track
+    """
+    tags = []
 
-    soup = BeautifulSoup(html_doc, "html.parser")
-    # print(soup)
+    with urlopen(url) as page:
+        html_bytes = page.read()
+        html_doc = html_bytes.decode("utf_8")
 
-    for tag in soup.find_all('a', {'class': 'tag'}):
-        print(tag.text)
+    soup = BeautifulSoup(html_doc, "lxml")
+
+    for tag in soup.find_all("a", {"class": "tag"}):
+        tags.append(tag.text)
+
+    return tags
 
 
 def extract_data_from_json(sales_json: dict) -> list[dict]:
@@ -55,9 +62,12 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
                 if "https:" not in url:
                     url = "https:" + url
 
+                tags = get_tags_from_url(url)
+
                 entry = {
                     "amount_paid_usd": item["amount_paid_usd"],
-                    "url": url
+                    "url": url,
+                    "tags": tags
                 }
                 data.append(entry)
 
@@ -65,8 +75,6 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
 
 
 if __name__ == "__main__":
-    # print(unix_time_millis(datetime.now()))
     sales_data = load_sales_data(datetime.now())
-    data = extract_data_from_json(sales_data)
-    url = "https://ericksermon.bandcamp.com/track/wit-ees"
-    get_genre_from_url(url)
+    extracted_data = extract_data_from_json(sales_data)
+    print(extracted_data)
