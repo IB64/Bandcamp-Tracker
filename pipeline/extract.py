@@ -1,12 +1,15 @@
 """Script to interact with the Bandcamp API and extract relevant information"""
 from datetime import datetime
 from urllib.request import urlopen
+from time import perf_counter
 
 import requests
 from bs4 import BeautifulSoup
 
 EPOCH = datetime.utcfromtimestamp(0)
 TIMEOUT = 20
+ALBUM = "a"
+TRACK = "t"
 
 
 def unix_time_millis(dt: datetime) -> float:
@@ -27,22 +30,39 @@ def load_sales_data(dt: datetime) -> dict:
     return response.json()
 
 
-def get_tags_from_url(url: str) -> list[str]:
+def get_html(url: str) -> str:
     """
-    Given a url for a track, return the associated tags for the track
+    Given a url for a track, returns the associated html for that page.
     """
-    tags = []
-
     with urlopen(url) as page:
         html_bytes = page.read()
         html_doc = html_bytes.decode("utf_8")
+        return html_doc
 
-    soup = BeautifulSoup(html_doc, "lxml")
+
+def get_tags_from_url(html: str) -> list[str]:
+    """
+    Given the track page html, returns the associated tags for that track.
+    """
+    tags = []
+
+    soup = BeautifulSoup(html, "lxml")
 
     for tag in soup.find_all("a", {"class": "tag"}):
         tags.append(tag.text)
 
     return tags
+
+
+def get_title_from_url(html: str) -> str:
+    """
+    Given the track page html, returns the associated title for the track / album
+    """
+
+    soup = BeautifulSoup(html, "lxml")
+    title = soup.find("h2", {"class": "trackTitle"})
+
+    return title.text
 
 
 def extract_data_from_json(sales_json: dict) -> list[dict]:
@@ -58,16 +78,24 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
         if event["event_type"] == "sale":
             items = event["items"]
             for item in items:
+                if item["item_type"] not in (ALBUM, TRACK):
+                    continue
+
                 url = item["url"]
                 if "https:" not in url:
                     url = "https:" + url
 
-                tags = get_tags_from_url(url)
+                html = get_html(url)
+                tags = get_tags_from_url(html)
+                title = get_title_from_url(html)
 
                 entry = {
                     "amount_paid_usd": item["amount_paid_usd"],
-                    "url": url,
-                    "tags": tags
+                    "tags": tags,
+                    "country": item["country"],
+                    "title": title,
+                    "artist": item["artist_name"],
+                    "at": datetime.utcfromtimestamp(item["utc_date"])
                 }
                 data.append(entry)
 
@@ -75,6 +103,8 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
 
 
 if __name__ == "__main__":
+    start = perf_counter()
     sales_data = load_sales_data(datetime.now())
     extracted_data = extract_data_from_json(sales_data)
-    print(extracted_data)
+
+    print(f"Time taken: {perf_counter() - start}")
