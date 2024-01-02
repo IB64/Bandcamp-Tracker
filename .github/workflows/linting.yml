@@ -22,7 +22,9 @@ jobs:
           python-version: 3.9.16
 
       - name: Install dependencies
-        run: pip install pylint
+        run: |
+          pip install pylint
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
 
       - name: Run pylint on Python files
         run: |
