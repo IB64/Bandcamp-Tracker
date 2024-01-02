@@ -49,29 +49,3 @@ resource "aws_db_instance" "bandcamp_db" {
   username                     = var.DB_USER
   password                     = var.DB_PASSWORD
 }
-
-# Make the ECR repositories
-
-# Pipeline ECR
-resource "aws_ecr_repository" "pipeline_repo" {
-  name = "c9-bandcamp-pipeline-repo"
-  image_scanning_configuration {
-    scan_on_push = false
-  }
-}
-
-# Dashboard ECR
-resource "aws_ecr_repository" "dashboard_repo" {
-  name = "c9-bandcamp-dashboard-repo"
-  image_scanning_configuration {
-    scan_on_push = false
-  }
-}
-
-# Lambda ECR
-resource "aws_ecr_repository" "report_repo" {
-  name = "c9-bandcamp-report-repo"
-  image_scanning_configuration {
-    scan_on_push = false
-  }
-}
