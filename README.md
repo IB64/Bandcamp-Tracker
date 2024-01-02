@@ -17,4 +17,9 @@ This projects implements an ETL pipeline that includes, scraping, data transform
 
 ## Architecture Diagram
 
-https://drive.google.com/file/d/14G0h3gXS597q6ewJRbxL1AZ4jmSwr31F/view?usp=sharing
+![Alt text](image-1.png)
+
+
+## Entity Relationship Diagram
+
+![Alt text](image.png)
