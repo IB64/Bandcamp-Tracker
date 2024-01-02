@@ -8,4 +8,5 @@ __pycache__
 *.tfstate
 *.tfstate.backup
 *.tfvars
+.terraform.lock.hcl
 venv
