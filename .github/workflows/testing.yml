@@ -1,0 +1,44 @@
+name: Testing
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '**.py'
+  workflow_dispatch: {}
+
+jobs: 
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9.16
+
+      - name: Install dependencies
+        run: |
+          pip install pylint
+          REQUIREMENTS_FILES=$(find . -name "requirements.txt")
+          for file in $REQUIREMENTS_FILES; do
+            directory=$(dirname $file)
+            pip install -r $file
+          done
+
+      - name: Find test files
+        id: find-test-files
+        run: echo "::set-output name=test_files::$(find . -type f -name 'test_*.py' -not -path './.git/*')"
+
+      - name: Loop over test files and run tests
+        run: |
+          for test_file in ${{ steps.find-test-files.outputs.test_files }}; do
+            dir=$(dirname $test_file)
+            cd $dir
+            pytest $test_file
+            cd -
+          done
