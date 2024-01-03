@@ -2,6 +2,7 @@
 from datetime import datetime
 from urllib.request import urlopen
 from time import perf_counter
+import pandas as pd
 
 import requests
 from bs4 import BeautifulSoup
@@ -99,7 +100,9 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
                 }
                 data.append(entry)
 
-    return data
+    df = pd.DataFrame(data)
+    df.to_csv("data.csv", index=False)
+    return df
 
 
 if __name__ == "__main__":
