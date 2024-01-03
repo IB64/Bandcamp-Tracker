@@ -77,10 +77,10 @@ def get_title_from_url(html: str) -> str:
     return title.text
 
 
-def extract_data_from_json(sales_json: dict) -> pd.DataFrame:
+def extract_data_from_json(sales_json: dict) -> list[dict]:
     """
     Given the JSON response from a get request to the Bandcamp API,
-    return a pandas dataframe with wanted information for each sale.
+    return a list of dicts with wanted information for each sale.
     """
     data = []
 
@@ -110,9 +110,7 @@ def extract_data_from_json(sales_json: dict) -> pd.DataFrame:
                 }
                 data.append(entry)
 
-    df = pd.DataFrame(data)
-
-    return df
+    return data
 
 
 if __name__ == "__main__":

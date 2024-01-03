@@ -7,6 +7,13 @@ DNB = ['Drum & Bass', 'Dnb', 'Drum N Bass']
 RNB = ['Rnb', 'R&B']
 
 
+def convert_to_df(extracted_data: list[dict]):
+    """
+    Converts a list of dictionaries into a pandas dataframe and returns it.
+    """
+    return pd.DataFrame(extracted_data)
+
+
 def clean_tags(tags: list[str]) -> list[str]:
     """
     Cleans the tags associated with the album / track.
