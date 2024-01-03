@@ -2,9 +2,11 @@
 Script to clean and transform all the data from the extract script.
 """
 import pandas as pd
+import spacy
 
 DNB = ['Drum & Bass', 'Dnb', 'Drum N Bass']
 RNB = ['Rnb', 'R&B']
+NLP_MODEL = spacy.load("en_core_web_sm")
 
 
 def convert_to_df(extracted_data: list[dict]):
@@ -20,22 +22,31 @@ def clean_tags(tags: list[str]) -> list[str]:
     """
     tags_set = set()
     for tag in tags:
-        if '-' in tag:
-            tag = tag.replace('-', ' ')
-        if '/' in tag:
-            tags = tag.split('/')
-            for extra_tag in tags:
-                tags_set.add(extra_tag.title())
-            continue
-        if tag[-1] == '.':
-            tag = tag[:-1]
-        if tag.title() in DNB:
-            tags_set.add('DNB')
-        elif tag.title in RNB:
-            tags_set.add('R&B')
+        doc = NLP_MODEL(tag)
+        for ent in doc.ents:
+            if ent.label_ == "GPE" or ent.label_ == "PERSON":
+                break
         else:
-            tags_set.add(tag.title())
-    return list(tags_set)
+            if '-' in tag:
+                tag = tag.replace('-', ' ')
+            if '/' in tag:
+                tags = tag.split('/')
+                for extra_tag in tags:
+                    tags_set.add(extra_tag.title())
+                continue
+            if tag[-1] == '.':
+                tag = tag[:-1]
+            if tag.title() in DNB:
+                tags_set.add('DNB')
+            elif tag.title in RNB:
+                tags_set.add('R&B')
+            else:
+                tags_set.add(tag.title())
+    new_tags = list(tags_set)
+    if new_tags:
+        return new_tags
+    else:
+        return ["Other"]
 
 
 def clean_artists(name: str) -> str:
