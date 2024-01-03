@@ -1,9 +1,12 @@
-"""Script to interact with the Bandcamp API and extract relevant information"""
+"""
+Script to interact with the Bandcamp API and extract relevant information
+"""
 from datetime import datetime
 from time import perf_counter
 from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
+import pandas as pd
 import requests
 from requests.exceptions import Timeout, HTTPError
 
@@ -77,8 +80,7 @@ def get_title_from_url(html: str) -> str:
 def extract_data_from_json(sales_json: dict) -> list[dict]:
     """
     Given the JSON response from a get request to the Bandcamp API,
-    return a list of dictionaries with each dictionary containing
-    wanted information for each sale.
+    return a list of dicts with wanted information for each sale.
     """
     data = []
 
