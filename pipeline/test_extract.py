@@ -81,7 +81,8 @@ class TestBandcampAPI:
                             "artist_name": "Artist",
                             "utc_date": 1641100800,
                             "item_type": "a",
-                            "url": "https://example.com"
+                            "url": "https://example.com",
+                            "art_url": "https://exampleimage.com"
                         }
                     ]
                 }
@@ -95,7 +96,9 @@ class TestBandcampAPI:
             "country": "US",
             "title": "Sample Title",
             "artist": "Artist",
-            "at": datetime.utcfromtimestamp(1641100800).strftime("%m/%d/%Y, %H:%M:%S")
+            "at": datetime.utcfromtimestamp(1641100800).strftime("%m/%d/%Y, %H:%M:%S"),
+            "type": "album",
+            "image": "https://exampleimage.com"
         }]
         assert result == expected
 
