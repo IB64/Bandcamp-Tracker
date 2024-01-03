@@ -95,7 +95,7 @@ class TestBandcampAPI:
             "country": "US",
             "title": "Sample Title",
             "artist": "Artist",
-            "at": datetime.utcfromtimestamp(1641100800)
+            "at": datetime.utcfromtimestamp(1641100800).strftime("%m/%d/%Y, %H:%M:%S")
         }]
         assert result == expected
 
