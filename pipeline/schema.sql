@@ -81,14 +81,14 @@ INSERT INTO item_type(item_type) VALUES
 ('album'),
 ('track');
 
-INSERT INTO item(item_type_id, item_name, artist_id) VALUES
-('Positions', 1, 1),
-('Pink Print', 1, 3),
-('Sasha Fierce', 1, 4),
-('Dangerous Woman', 2, 1),
-('After Hours', 1, 2),
-('StarBoy', 2, 2),
-('StarBoy', 1, 2);
+INSERT INTO item(item_name,item_type_id, artist_id, item_image) VALUES
+('Positions', 1, 1, 'https://www.positions.com'),
+('Pink Print', 1, 3, 'https://www.pinkprint.com'),
+('Sasha Fierce', 1, 4, 'https://www.sashafierce.com'),
+('Dangerous Woman', 2, 1, 'https://www.dangerouswoman.com'),
+('After Hours', 1, 2, 'https://www.afterhours.com'),
+('StarBoy', 2, 2, 'https://www.starboy-track.com'),
+('StarBoy', 1, 2, 'https://www.starboy-album.com');
 
 INSERT INTO genre(genre) VALUES
 ('pop'),
@@ -110,7 +110,11 @@ INSERT INTO item_genre(item_id, genre_id) VALUES
 (5,4),
 (6,1),
 (6,3),
-(6,5);
+(6,5),
+(7,1),
+(7,3),
+(7,5);
+
 
 INSERT INTO sale_event(sale_time,amount,item_id,country_id) VALUES
 ('2024-1-3, 9:42:49', 1197, 1, 2),
