@@ -1,6 +1,10 @@
-import unittest
+"""
+Tests the functions within extract.py script 
+"""
+
 from datetime import datetime
 from unittest.mock import patch, MagicMock
+
 from extract import (
     unix_time_millis,
     load_sales_data,
@@ -9,40 +13,56 @@ from extract import (
     extract_data_from_json
 )
 
+EXAMPLE_DATETIME = datetime(2023, 1, 1)
+EXAMPLE_UNIX_TIME = 1672531200000
 
-class TestBandcampAPI(unittest.TestCase):
+
+class TestBandcampAPI:
+    """
+    Class used for testing
+    """
 
     def test_unix_time_millis(self):
-        dt = datetime(2023, 1, 1)
-        result = unix_time_millis(dt)
-        expected = 1672531200000.0
-        self.assertEqual(result, expected)
+        """
+        Test whether the function returns the correct value
+        """
+        result = unix_time_millis(EXAMPLE_DATETIME)
+        assert result == EXAMPLE_UNIX_TIME
 
     @patch("extract.requests.get")
     def test_load_sales_data(self, mock_get):
+        """
+        Tests whether the appropriate sales data are returned - base cases
+        """
         mock_response = MagicMock()
-
         mock_response.json.return_value = {"events": []}
         mock_get.return_value = mock_response
-
-        dt = datetime.utcnow()
-        result = load_sales_data(dt)
-        self.assertEqual(result, {"events": []})
+        result = load_sales_data(EXAMPLE_DATETIME)
+        assert result == {"events": []}
 
     def test_get_tags_from_url(self):
+        """
+        Test whether appropriate tags are extracted from html
+        """
         html = '<a class="tag">rock</a>'
         result = get_tags_from_url(html)
-        self.assertEqual(result, ["rock"])
+        assert result == ["rock"]
 
     def test_get_title_from_url(self):
+        """
+        Test whether the title of an album or track is found
+        """
         html = '<h2 class="trackTitle">Sample Title</h2>'
         result = get_title_from_url(html)
-        self.assertEqual(result, "Sample Title")
+        assert result == "Sample Title"
 
     @patch("extract.get_html")
     @patch("extract.get_tags_from_url")
     @patch("extract.get_title_from_url")
     def test_extract_data_from_json(self, mock_get_title, mock_get_tags, mock_get_html):
+        """
+        Test whether the appropriate data is extracted from a given JSON
+        """
         mock_get_html.return_value = "<html></html>"
         mock_get_tags.return_value = ["rock"]
         mock_get_title.return_value = "Sample Title"
@@ -74,4 +94,4 @@ class TestBandcampAPI(unittest.TestCase):
             "artist": "Artist",
             "at": datetime.utcfromtimestamp(1641100800)
         }]
-        self.assertEqual(result, expected)
+        assert result == expected
