@@ -11,6 +11,5 @@ if __name__ == "__main__":
     extracted_data = extract_data_from_json(sales_data)
 
     clean_data = clean_dataframe(extracted_data)
-    clean_data.to_csv("clean_data.csv", index=False)
 
     print(f"Time taken: {perf_counter() - start}")
