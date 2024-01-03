@@ -116,28 +116,94 @@ def get_top_3_grossing_artists(data: pd.DataFrame) -> pd.DataFrame:
     return artist_sales
 
 
+def remove_duplicate_words(words: list) -> list:
+    """Removes duplicate words in a list"""
+
+    return list(set(words))
+
+
 def get_top_3_sold_albums(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe of the top 3 solditems which includes theitem name, artist, genre and amount"""
+    """Returns a dataframe of the top 3 sold albums which includes the item name, artist, genre and amount"""
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     album_sales = unique_sales.drop(
         unique_sales[unique_sales['item_type'] == 'track'].index)
-    popular_albums = album_sales['item_name'].value_counts().head(
+    popular_albums = album_sales['item_name'].value_counts().sort_values(ascending=False).head(
         3).reset_index()
 
     return popular_albums
 
 
 def get_top_3_sold_tracks(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe of the top 3 solditems which includes theitem name, artist, genre and amount"""
+    """Returns a dataframe of the top 3 sold items which includes theitem name, artist, genre and amount"""
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     track_sales = unique_sales.drop(
         unique_sales[unique_sales['item_type'] == 'album'].index)
-    popular_tracks = track_sales['item_name'].value_counts().head(
+    popular_tracks = track_sales['item_name'].value_counts().sort_values(ascending=False).head(
         3).reset_index()
 
     return popular_tracks
+
+
+def get_top_3_grossing_albums(data: pd.DataFrame) -> pd.DataFrame:
+    """Returns a dataframe of the top 3 albums that are earning the most money"""
+
+    unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
+    album_sales = unique_sales.drop(
+        unique_sales[unique_sales['item_type'] == 'track'].index)
+    album_sales = album_sales.groupby(
+        'item_name')['amount'].sum()
+    album_sales = (
+        album_sales/100).sort_values(ascending=False).head(3).reset_index()
+
+    return album_sales
+
+
+def get_top_3_grossing_tracks(data: pd.DataFrame) -> pd.DataFrame:
+    """Returns a dataframe of the top 3 albums that are earning the most money"""
+
+    unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
+    track_sales = unique_sales.drop(
+        unique_sales[unique_sales['item_type'] == 'album'].index)
+    track_sales = track_sales.groupby(
+        'item_name')['amount'].sum()
+    track_sales = (
+        track_sales/100).sort_values(ascending=False).head(3).reset_index()
+
+    return track_sales
+
+
+def get_album_genres(data: pd.DataFrame, filter: list[str]) -> pd.DataFrame:
+    """Returns a dataframe of the top 3 sold albums which includes the album name, artist, genre and amount"""
+
+    album_sales = data[data['item_type'] == 'album']
+
+    filtered_album_sales = album_sales[album_sales['item_name'].isin(filter)]
+
+    albums = filtered_album_sales.groupby(['item_name', 'artist'])[
+        'genre'].agg(list).reset_index()
+
+    albums['genre'] = albums['genre'].apply(
+        remove_duplicate_words)
+
+    return albums
+
+
+def get_track_genres(data: pd.DataFrame, filter: list[str]) -> pd.DataFrame:
+    """Returns a dataframe of the top 3 sold albums which includes the album name, artist, genre and amount"""
+
+    track_sales = data[data['item_type'] == 'track']
+
+    filtered_track_sales = track_sales[track_sales['item_name'].isin(filter)]
+
+    tracks = filtered_track_sales.groupby(['item_name', 'artist'])[
+        'genre'].agg(list).reset_index()
+
+    tracks['genre'] = tracks['genre'].apply(
+        remove_duplicate_words)
+
+    return tracks
 
 
 def get_popular_genre(data: pd.DataFrame) -> pd.DataFrame:
@@ -167,6 +233,15 @@ if __name__ == "__main__":
     top_3_albums = get_top_3_sold_albums(all_data)
     top_3_tracks = get_top_3_sold_tracks(all_data)
 
+    top_3_albums_list = top_3_albums['item_name'].tolist()
+    top_3_tracks_list = top_3_tracks['item_name'].tolist()
+
+    album_genres = get_album_genres(all_data, top_3_albums_list)
+    track_genres = get_track_genres(all_data, top_3_tracks_list)
+
+    top_3_grossing_albums = get_top_3_grossing_albums(all_data)
+    top_3_grossing_tracks = get_top_3_grossing_tracks(all_data)
+
     print(all_data)
     print('-------')
     print(top_3_popular_artists)
@@ -178,6 +253,14 @@ if __name__ == "__main__":
     print(top_3_albums)
     print('-------')
     print(top_3_tracks)
+    print('-------')
+    print(album_genres)
+    print('-------')
+    print(track_genres)
+    print('-------')
+    print(top_3_grossing_albums)
+    print('-------')
+    print(top_3_grossing_tracks)
     print('-------')
 
     print(
