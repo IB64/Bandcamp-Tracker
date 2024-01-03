@@ -29,6 +29,7 @@ jobs:
             directory=$(dirname $file)
             pip install -r $file
           done
+          python -m spacy download en_core_web_sm
 
       - name: Run pytest
         run: |
