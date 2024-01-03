@@ -1,15 +1,17 @@
 """Script to interact with the Bandcamp API and extract relevant information"""
 from datetime import datetime
-from urllib.request import urlopen
 from time import perf_counter
+from urllib.request import urlopen
 
-import requests
 from bs4 import BeautifulSoup
+import requests
+from requests.exceptions import Timeout, HTTPError
 
 EPOCH = datetime.utcfromtimestamp(0)
 TIMEOUT = 20
 ALBUM = "a"
 TRACK = "t"
+FIVE_MINS_IN_SECONDS = 300
 
 
 def unix_time_millis(dt: datetime) -> float:
@@ -21,11 +23,18 @@ def unix_time_millis(dt: datetime) -> float:
 
 def load_sales_data(dt: datetime) -> dict:
     """
-    Uses the bandcamp API to return all the sales data from the last minute in json format.
+    Uses the bandcamp API to return all the sales data from the last 5 minute in json format.
     """
-    seconds = unix_time_millis(dt) - 60
-    response = requests.get(
-        f"https://bandcamp.com/api/salesfeed/1/get?start_date={seconds}", timeout=TIMEOUT)
+    seconds = unix_time_millis(dt) - FIVE_MINS_IN_SECONDS
+    try:
+        response = requests.get(
+            f"https://bandcamp.com/api/salesfeed/1/get?start_date={seconds}", timeout=TIMEOUT)
+    except ConnectionError as exc:
+        raise ConnectionError("Connection failed") from exc
+    except Timeout as exc:
+        raise Timeout("The request timed out.") from exc
+    except HTTPError as exc:
+        raise HTTPError("url is invalid.") from exc
 
     return response.json()
 
@@ -95,7 +104,7 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
                     "country": item["country"],
                     "title": title,
                     "artist": item["artist_name"],
-                    "at": datetime.utcfromtimestamp(item["utc_date"])
+                    "at": datetime.utcfromtimestamp(item["utc_date"]).strftime("%m/%d/%Y, %H:%M:%S")
                 }
                 data.append(entry)
 
