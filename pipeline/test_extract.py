@@ -5,6 +5,9 @@ Tests the functions within extract.py script
 from datetime import datetime
 from unittest.mock import patch, MagicMock
 
+import pytest
+from requests.exceptions import Timeout, HTTPError
+
 from extract import (
     unix_time_millis,
     load_sales_data,
@@ -19,7 +22,7 @@ EXAMPLE_UNIX_TIME = 1672531200000
 
 class TestBandcampAPI:
     """
-    Class used for testing
+    Class used for testing base cases
     """
 
     def test_unix_time_millis(self):
@@ -95,3 +98,27 @@ class TestBandcampAPI:
             "at": datetime.utcfromtimestamp(1641100800)
         }]
         assert result == expected
+
+
+class TestBandCampAPIFails:
+    """
+    Tests whether appropriate responses occur when an error occurs
+    """
+
+    @patch("extract.requests.get", side_effect=ConnectionError("Connection failed"))
+    def test_connection_error(self, mock_get):
+        """Test whether a ConnectionError is thrown"""
+        with pytest.raises(ConnectionError):
+            load_sales_data(EXAMPLE_DATETIME)
+
+    @patch("extract.requests.get", side_effect=Timeout("The request timed out."))
+    def test_timeout_error(self, mock_get):
+        """Test whether a Timeout is thrown"""
+        with pytest.raises(Timeout):
+            load_sales_data(EXAMPLE_DATETIME)
+
+    @patch("extract.requests.get", side_effect=HTTPError("url is invalid."))
+    def test_http_error(self, mock_get):
+        """Test whether a HTTPError is thrown"""
+        with pytest.raises(HTTPError):
+            load_sales_data(EXAMPLE_DATETIME)
