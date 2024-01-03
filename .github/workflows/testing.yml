@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pylint
+          pip install pytest
           REQUIREMENTS_FILES=$(find . -name "requirements.txt")
           for file in $REQUIREMENTS_FILES; do
             directory=$(dirname $file)
