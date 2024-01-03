@@ -214,6 +214,24 @@ def get_popular_genre(data: pd.DataFrame) -> pd.DataFrame:
     return unique_genre_count
 
 
+def get_countries_with_most_sales(data: pd.DataFrame) -> pd.DataFrame:
+    """Returns a dataframe that shows how many sales are happening in each country."""
+
+    country_sales = data['country'].value_counts(
+    ).sort_values(ascending=False).reset_index()
+
+    return country_sales
+
+
+def get_popular_artist_per_country(data: pd.DataFrame) -> pd.DataFrame:
+    """Returns a dataframe that shows which artist is the most popular in each country"""
+
+    most_popular_artists = data.groupby('country')['artist'].apply(
+        lambda x: x.value_counts().idxmax()).reset_index()
+
+    return most_popular_artists
+
+
 if __name__ == "__main__":
 
     load_dotenv()
@@ -242,6 +260,9 @@ if __name__ == "__main__":
     top_3_grossing_albums = get_top_3_grossing_albums(all_data)
     top_3_grossing_tracks = get_top_3_grossing_tracks(all_data)
 
+    sales_per_country = get_countries_with_most_sales(all_data)
+    artists_per_country = get_popular_artist_per_country(all_data)
+
     print(all_data)
     print('-------')
     print(top_3_popular_artists)
@@ -261,6 +282,10 @@ if __name__ == "__main__":
     print(top_3_grossing_albums)
     print('-------')
     print(top_3_grossing_tracks)
+    print('-------')
+    print(sales_per_country)
+    print('-------')
+    print(artists_per_country)
     print('-------')
 
     print(
