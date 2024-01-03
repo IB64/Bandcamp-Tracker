@@ -104,7 +104,7 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
                     "country": item["country"],
                     "title": title,
                     "artist": item["artist_name"],
-                    "at": datetime.utcfromtimestamp(item["utc_date"])
+                    "at": datetime.utcfromtimestamp(item["utc_date"]).strftime("%m/%d/%Y, %H:%M:%S")
                 }
                 data.append(entry)
 
