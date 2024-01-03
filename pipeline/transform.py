@@ -38,7 +38,7 @@ def clean_tags(tags: list[str]) -> list[str]:
                 tag = tag[:-1]
             if tag.title() in DNB:
                 tags_set.add('DNB')
-            elif tag.title in RNB:
+            elif tag.title() in RNB:
                 tags_set.add('R&B')
             else:
                 tags_set.add(tag.title())
@@ -54,7 +54,7 @@ def clean_artists(name: str) -> str:
     For artist names that feature other artists,
     featured artists are erased and only the main artist is left
     """
-    artists = name.split("ft.")
+    artists = name.split(" ft.")
     return artists[0]
 
 
