@@ -6,6 +6,7 @@ import spacy
 
 DNB = ['Drum & Bass', 'Dnb', 'Drum N Bass']
 RNB = ['Rnb', 'R&B']
+FEATURING = ["ft.", "featuring"]
 NLP_MODEL = spacy.load("en_core_web_sm")
 
 
@@ -20,6 +21,8 @@ def clean_tags(tags: list[str]) -> list[str]:
     """
     Cleans the tags associated with the album / track.
     """
+    if not tags:
+        return ["Other"]
     tags_set = set()
     for tag in tags:
         doc = NLP_MODEL(tag)
@@ -27,6 +30,8 @@ def clean_tags(tags: list[str]) -> list[str]:
             if ent.label_ == "GPE" or ent.label_ == "PERSON":
                 break
         else:
+            if tag == "":
+                continue
             if '-' in tag:
                 tag = tag.replace('-', ' ')
             if '/' in tag:
@@ -54,8 +59,11 @@ def clean_artists(name: str) -> str:
     For artist names that feature other artists,
     featured artists are erased and only the main artist is left
     """
-    artists = name.split(" ft.")
-    return artists[0]
+    for word in FEATURING:
+        if word in name:
+            artists = name.split(f" {word}")
+            return artists[0]
+    return name
 
 
 def clean_dataframe(dataframe: pd.DataFrame) -> pd.DataFrame:
