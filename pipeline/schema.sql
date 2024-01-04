@@ -39,7 +39,7 @@ CREATE TABLE item(
 );
 
 CREATE TABLE genre(
-    genre_id SMALLINT GENERATED ALWAYS AS IDENTITY,
+    genre_id INT GENERATED ALWAYS AS IDENTITY,
     genre VARCHAR NOT NULL UNIQUE,
     PRIMARY KEY (genre_id)
 );
@@ -47,7 +47,7 @@ CREATE TABLE genre(
 CREATE TABLE item_genre(
     item_genre_id INT GENERATED ALWAYS AS IDENTITY,
     item_id INT NOT NULL,
-    genre_id SMALLINT NOT NULL,
+    genre_id INT NOT NULL,
     PRIMARY KEY (item_genre_id),
     FOREIGN KEY (item_id) REFERENCES item(item_id) ON DELETE CASCADE,
     FOREIGN KEY (genre_id) REFERENCES genre(genre_id) ON DELETE CASCADE
