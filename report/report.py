@@ -341,11 +341,11 @@ def generate_pdf_report(data):
     top_5_albums_list = top_5_albums['item_name'].tolist()
     top_5_tracks_list = top_5_tracks['item_name'].tolist()
 
-    album_genres = get_album_genres(all_data, top_5_albums_list)
-    track_genres = get_track_genres(all_data, top_5_tracks_list)
+    album_genres = get_album_genres(data, top_5_albums_list)
+    track_genres = get_track_genres(data, top_5_tracks_list)
 
     # Genre Data
-    top_genres = get_popular_genre(all_data)
+    top_genres = get_popular_genre(data)
     pdf.set_font("Arial", "B", size=18)
     pdf.cell(200, 10, txt=f"-------Top 5 Genres-------", ln=True)
     pdf.set_font("Arial", size=12)
@@ -357,8 +357,8 @@ def generate_pdf_report(data):
     pdf.ln(8)
 
     # Country Sales
-    sales_per_country = get_countries_with_most_sales(all_data)
-    artists_per_country = get_popular_artist_per_country(all_data)
+    sales_per_country = get_countries_with_most_sales(data)
+    artists_per_country = get_popular_artist_per_country(data)
 
     pdf.set_font("Arial", "B", size=18)
     pdf.cell(200, 10, txt=f"-------Sales Per Country-------", ln=True)
@@ -381,6 +381,20 @@ def generate_pdf_report(data):
     pdf.ln(8)
 
     return pdf.output(f"Bandcamp-Report.pdf")
+
+
+def handler(event=None, context=None) -> dict:
+    """Handler for the lambda function"""
+
+    load_dotenv()
+
+    connection = get_db_connection()
+
+    all_data = load_all_data(connection)
+
+    pdf_report = generate_pdf_report(all_data)
+
+    return {"html_report": pdf_report}
 
 
 if __name__ == "__main__":
