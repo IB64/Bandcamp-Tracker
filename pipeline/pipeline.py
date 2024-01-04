@@ -12,5 +12,6 @@ if __name__ == "__main__":
 
     extracted_data_df = convert_to_df(extracted_data)
     clean_data = clean_dataframe(extracted_data_df)
+    clean_data.to_csv('clean_data.csv')
 
     print(f"Time taken: {perf_counter() - start}")
