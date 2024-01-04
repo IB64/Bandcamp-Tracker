@@ -17,9 +17,9 @@ This projects implements an ETL pipeline that includes, scraping, data transform
 
 ## Architecture Diagram
 
-![image](https://drive.google.com/file/d/14G0h3gXS597q6ewJRbxL1AZ4jmSwr31F/view?usp=sharing)
+<img src="architect.jpeg" alt="Architect Diagram" width="500"/>
 
 
 ## Entity Relationship Diagram
 
-![Alt text](https://drawsql.app/teams/ishikas-team/diagrams/bandcamp-tracker)
+<img src="database.jpeg" alt="Database Diagram" width="500"/>
