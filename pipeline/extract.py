@@ -77,6 +77,13 @@ def get_title_from_url(html: str) -> str:
     return title.text
 
 
+def get_time_from_unix(time: float) -> str:
+    """
+    Given a unix time, convert that time into a datetime string.
+    """
+    return datetime.utcfromtimestamp(time).strftime("%m/%d/%Y, %H:%M:%S")
+
+
 def extract_data_from_json(sales_json: dict) -> list[dict]:
     """
     Given the JSON response from a get request to the Bandcamp API,
@@ -89,9 +96,16 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
         if event["event_type"] == "sale":
             items = event["items"]
             for item in items:
-                if item["item_type"] not in (ALBUM, TRACK):
+                # determine item type. Skip if not an album or track
+                item_type = item["item_type"]
+                if item_type not in (ALBUM, TRACK):
                     continue
+                if item_type == ALBUM:
+                    item_type = "album"
+                elif item_type == TRACK:
+                    item_type = "track"
 
+                # append "https:" to urls that don't have it
                 url = item["url"]
                 if "https:" not in url:
                     url = "https:" + url
@@ -99,6 +113,7 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
                 html = get_html(url)
                 tags = get_tags_from_url(html)
                 title = get_title_from_url(html)
+                time_bought = get_time_from_unix(item["utc_date"])
 
                 entry = {
                     "amount_paid_usd": item["amount_paid_usd"],
@@ -106,7 +121,9 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
                     "country": item["country"],
                     "title": title,
                     "artist": item["artist_name"],
-                    "at": datetime.utcfromtimestamp(item["utc_date"]).strftime("%m/%d/%Y, %H:%M:%S")
+                    "at": time_bought,
+                    "type": item_type,
+                    "image": item["art_url"]
                 }
                 data.append(entry)
 
