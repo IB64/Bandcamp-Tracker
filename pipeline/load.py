@@ -1,3 +1,4 @@
+"""Script which loads data to the tables in the database"""
 from os import environ
 
 from dotenv import load_dotenv
@@ -7,7 +8,9 @@ from rapidfuzz.distance import Levenshtein
 
 
 def get_db_connection() -> extensions.connection:
-    """Returns a connection to the AWS Bandcamp database"""
+    """
+    Returns a connection to the AWS Bandcamp database
+    """
 
     try:
         return connect(user=environ["DB_USER"],
@@ -18,36 +21,43 @@ def get_db_connection() -> extensions.connection:
     except ConnectionError:
         print("Error: Cannot connect to the database")
 
-def load_genres(x, db_connection: extensions.connection):
-    
+def load_genres(new_genre, db_connection: extensions.connection):
+    """
+    Finds any unique genres or genres with a less then 75% match to any in the table 
+    and uploads them to the table
+    """
+
     with db_connection.cursor() as cur:
         cur.execute("SELECT * FROM genre;")
-        
+
 
         genres = cur.fetchall()
         for genre in genres:
-            if genre[1] == x.lower():
+            if genre[1] == new_genre.lower():
                 return
-            
+
             if Levenshtein.normalized_similarity(
-            genre[1], x.lower()) > 0.75:
+            genre[1], new_genre.lower()) > 0.75:
                 return
-        
-        cur.execute(f"INSERT INTO genre(genre) VALUES ('{x.lower()}');")
+
+        cur.execute(f"INSERT INTO genre(genre) VALUES ('{new_genre.lower()}');")
         db_connection.commit()
 
-def load_artists(x, db_connection: extensions.connection):
-    
+def load_artists(new_artist, db_connection: extensions.connection):
+    """
+    Finds any unique artists and uploads them to the table.
+    """
+
     with db_connection.cursor() as cur:
         cur.execute("SELECT * FROM artist;")
-        
+
 
         artists = cur.fetchall()
         for artist in artists:
-            if artist[1] == x.lower():
+            if artist[1] == new_artist.lower():
                 return
-        
-        cur.execute(f"INSERT INTO artist(artist_name) VALUES ('{x.lower()}');")
+
+        cur.execute(f"INSERT INTO artist(artist_name) VALUES ('{new_artist.lower()}');")
         db_connection.commit()
 
 
@@ -58,5 +68,3 @@ if __name__ == "__main__":
     con = get_db_connection()
     music_df['tags'].apply(load_genres, db_connection=con)
     music_df['artist'].apply(load_artists, db_connection=con)
-    
-
