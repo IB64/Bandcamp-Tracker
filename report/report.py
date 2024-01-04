@@ -174,12 +174,12 @@ def get_top_3_grossing_tracks(data: pd.DataFrame) -> pd.DataFrame:
     return track_sales
 
 
-def get_album_genres(data: pd.DataFrame, filter: list[str]) -> pd.DataFrame:
+def get_album_genres(data: pd.DataFrame, selected: list[str]) -> pd.DataFrame:
     """Returns a dataframe of the top 3 sold albums which includes the album name, artist, genre and amount"""
 
     album_sales = data[data['item_type'] == 'album']
 
-    filtered_album_sales = album_sales[album_sales['item_name'].isin(filter)]
+    filtered_album_sales = album_sales[album_sales['item_name'].isin(selected)]
 
     albums = filtered_album_sales.groupby(['item_name', 'artist'])[
         'genre'].agg(list).reset_index()
@@ -190,12 +190,12 @@ def get_album_genres(data: pd.DataFrame, filter: list[str]) -> pd.DataFrame:
     return albums
 
 
-def get_track_genres(data: pd.DataFrame, filter: list[str]) -> pd.DataFrame:
+def get_track_genres(data: pd.DataFrame, selected: list[str]) -> pd.DataFrame:
     """Returns a dataframe of the top 3 sold albums which includes the album name, artist, genre and amount"""
 
     track_sales = data[data['item_type'] == 'track']
 
-    filtered_track_sales = track_sales[track_sales['item_name'].isin(filter)]
+    filtered_track_sales = track_sales[track_sales['item_name'].isin(selected)]
 
     tracks = filtered_track_sales.groupby(['item_name', 'artist'])[
         'genre'].agg(list).reset_index()
