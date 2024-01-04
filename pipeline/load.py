@@ -35,14 +35,16 @@ def load_genres(new_genre, db_connection: extensions.connection):
         genres = cur.fetchall()
         for genre in genres:
             if genre[1] == new_genre.lower():
-                return
+                return new_genre
 
-            # if Levenshtein.normalized_similarity(
-            # genre[1], new_genre.lower()) > 0.75:
-            #     return
+            if Levenshtein.normalized_similarity(
+            genre[1], new_genre.lower()) > 0.75:
+                return genre[1]
 
+        new_genre = new_genre.replace("'", "''")
         cur.execute(f"INSERT INTO genre(genre) VALUES ('{new_genre.lower()}');")
         db_connection.commit()
+        return new_genre
 
 def load_artists(new_artist, db_connection: extensions.connection):
     """
@@ -92,6 +94,7 @@ def load_items(new_item, db_connection: extensions.connection):
             
         cur.execute(f"SELECT item_type_id FROM item_type WHERE item_type='{new_item['type']}'")
         item_type_id = cur.fetchone()[0]
+        new_item['artist'] = new_item['artist'].replace("'", "''")
         cur.execute(f"SELECT artist_id FROM artist WHERE artist_name='{new_item['artist'].lower()}'")
         artist_id = cur.fetchone()[0]
         new_item['title'] = new_item['title'].replace("'", "''")
@@ -101,7 +104,7 @@ def load_items(new_item, db_connection: extensions.connection):
         
 def load_item_genres(new_item, db_connection):
     """
-    Connects to items to the genres.
+    Connects the items to the genres through table IDs.
     """
     with db_connection.cursor() as cur:
         new_item['title'] = new_item['title'].replace("'", "''")
@@ -122,6 +125,9 @@ def load_item_genres(new_item, db_connection):
         db_connection.commit()
 
 def load_sales_event(new_sale, db_connection):
+    """
+    Uploads all the sales events to the sales event table.
+    """
     with db_connection.cursor() as cur:
         cur.execute(f"SELECT country_id FROM country WHERE country='{new_sale['country']}';")
         country_id = cur.fetchone()[0]
@@ -135,7 +141,10 @@ def load_sales_event(new_sale, db_connection):
         db_connection.commit()
 
 def load_data(sale_df_flat_tags: pd.DataFrame, sale_df: pd.DataFrame, con: extensions.connection):
-    sale_df_flat_tags['tags'].apply(load_genres, db_connection=con)
+    """
+    Finds all the required data to be uploaded to the correct table.
+    """
+    sale_df_flat_tags['tags'] = sale_df_flat_tags['tags'].apply(load_genres, db_connection=con)
     print("Tags added")
     sale_df_flat_tags['artist'].apply(load_artists, db_connection=con)
     print("Artists added")

@@ -18,9 +18,7 @@ if __name__ == "__main__":
     # Transform
     extracted_data_df = convert_to_df(extracted_data)
     clean_data_exploded = clean_dataframe(extracted_data_df, False)
-    clean_data_exploded.to_csv("exploded.csv")
     clean_data = clean_dataframe(extracted_data_df, True)
-    clean_data.to_csv("not-exploded.csv")
     print("Transformed!")
 
     # Load
