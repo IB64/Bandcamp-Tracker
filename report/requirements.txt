@@ -4,3 +4,4 @@ pytest
 psycopg2
 pandas
 ipykernel
+fpdf
