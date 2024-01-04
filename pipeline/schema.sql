@@ -39,7 +39,7 @@ CREATE TABLE item(
 );
 
 CREATE TABLE genre(
-    genre_id INT GENERATED ALWAYS AS IDENTITY,
+    genre_id SMALLINT GENERATED ALWAYS AS IDENTITY,
     genre VARCHAR NOT NULL UNIQUE,
     PRIMARY KEY (genre_id)
 );
@@ -47,7 +47,7 @@ CREATE TABLE genre(
 CREATE TABLE item_genre(
     item_genre_id INT GENERATED ALWAYS AS IDENTITY,
     item_id INT NOT NULL,
-    genre_id INT NOT NULL,
+    genre_id SMALLINT NOT NULL,
     PRIMARY KEY (item_genre_id),
     FOREIGN KEY (item_id) REFERENCES item(item_id) ON DELETE CASCADE,
     FOREIGN KEY (genre_id) REFERENCES genre(genre_id) ON DELETE CASCADE
@@ -64,65 +64,3 @@ CREATE TABLE sale_event(
     FOREIGN KEY (item_id) REFERENCES item(item_id),
     FOREIGN KEY (country_id) REFERENCES country(country_id)
 );
-
-INSERT INTO country(country) VALUES
-('United State'),
-('United Kingdom'),
-('France'),
-('Germany');
-
-INSERT INTO artist(artist_name) VALUES
-('Ariana Grande'),
-('The Weeknd'),
-('Nicki Minaj'),
-('Beyonce');
-
-INSERT INTO item_type(item_type) VALUES
-('album'),
-('track');
-
-INSERT INTO item(item_name,item_type_id, artist_id, item_image) VALUES
-('Positions', 1, 1, 'https://www.positions.com'),
-('Pink Print', 1, 3, 'https://www.pinkprint.com'),
-('Sasha Fierce', 1, 4, 'https://www.sashafierce.com'),
-('Dangerous Woman', 2, 1, 'https://www.dangerouswoman.com'),
-('After Hours', 1, 2, 'https://www.afterhours.com'),
-('StarBoy', 2, 2, 'https://www.starboy-track.com'),
-('StarBoy', 1, 2, 'https://www.starboy-album.com');
-
-INSERT INTO genre(genre) VALUES
-('pop'),
-('rock'),
-('rnb'),
-('hip-hop'),
-('rap');
-
-INSERT INTO item_genre(item_id, genre_id) VALUES
-(1,1),
-(1,3),
-(2,3),
-(2,5),
-(3,1),
-(3,3),
-(4,1),
-(5,1),
-(5,3),
-(5,4),
-(6,1),
-(6,3),
-(6,5),
-(7,1),
-(7,3),
-(7,5);
-
-
-INSERT INTO sale_event(sale_time,amount,item_id,country_id) VALUES
-('2024-1-3, 9:42:49', 1197, 1, 2),
-('2024-1-3, 10:42:49', 997, 2, 3),
-('2024-1-2, 8:42:49', 197, 3, 1),
-('2024-1-3, 6:42:49', 567, 4, 4),
-('2024-1-3, 10:42:49', 435, 5, 3),
-('2024-1-2, 4:42:49', 1345, 6, 4),
-('2024-1-3, 10:42:49', 354, 1, 2),
-('2024-1-2, 11:42:49', 645, 3, 4),
-('2024-1-3, 10:42:49', 354, 3, 2);

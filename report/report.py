@@ -95,23 +95,23 @@ def get_key_analytics(data: pd.DataFrame) -> tuple:
     return total_sales, total_income
 
 
-def get_top_3_popular_artists(data: pd.DataFrame) -> pd.DataFrame:
+def get_top_5_popular_artists(data: pd.DataFrame) -> pd.DataFrame:
     """Returns a dataframe of the top 5 most popular artists for the previous day"""
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     popular_artists = unique_sales['artist'].value_counts().head(
-        3).reset_index()
+        5).reset_index()
 
     return popular_artists
 
 
-def get_top_3_grossing_artists(data: pd.DataFrame) -> pd.DataFrame:
+def get_top_5_grossing_artists(data: pd.DataFrame) -> pd.DataFrame:
     """Returns a dataframe of the top 5 selling artists for the previous day"""
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     artist_sales = unique_sales.groupby(
         'artist')['amount'].sum()
-    artist_sales = (artist_sales/100).head(3).reset_index()
+    artist_sales = (artist_sales/100).head(5).reset_index()
 
     return artist_sales
 
@@ -122,31 +122,31 @@ def remove_duplicate_words(words: list) -> list:
     return list(set(words))
 
 
-def get_top_3_sold_albums(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe of the top 3 sold albums which includes the item name, artist, genre and amount"""
+def get_top_5_sold_albums(data: pd.DataFrame) -> pd.DataFrame:
+    """Returns a dataframe of the top 5 sold albums which includes the item name, artist, genre and amount"""
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     album_sales = unique_sales.drop(
         unique_sales[unique_sales['item_type'] == 'track'].index)
     popular_albums = album_sales['item_name'].value_counts().sort_values(ascending=False).head(
-        3).reset_index()
+        5).reset_index()
 
     return popular_albums
 
 
-def get_top_3_sold_tracks(data: pd.DataFrame) -> pd.DataFrame:
+def get_top_5_sold_tracks(data: pd.DataFrame) -> pd.DataFrame:
     """Returns a dataframe of the top 3 sold items which includes theitem name, artist, genre and amount"""
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     track_sales = unique_sales.drop(
         unique_sales[unique_sales['item_type'] == 'album'].index)
     popular_tracks = track_sales['item_name'].value_counts().sort_values(ascending=False).head(
-        3).reset_index()
+        5).reset_index()
 
     return popular_tracks
 
 
-def get_top_3_grossing_albums(data: pd.DataFrame) -> pd.DataFrame:
+def get_top_5_grossing_albums(data: pd.DataFrame) -> pd.DataFrame:
     """Returns a dataframe of the top 3 albums that are earning the most money"""
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
@@ -155,13 +155,13 @@ def get_top_3_grossing_albums(data: pd.DataFrame) -> pd.DataFrame:
     album_sales = album_sales.groupby(
         'item_name')['amount'].sum()
     album_sales = (
-        album_sales/100).sort_values(ascending=False).head(3).reset_index()
+        album_sales/100).sort_values(ascending=False).head(5).reset_index()
 
     return album_sales
 
 
-def get_top_3_grossing_tracks(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe of the top 3 albums that are earning the most money"""
+def get_top_5_grossing_tracks(data: pd.DataFrame) -> pd.DataFrame:
+    """Returns a dataframe of the top 3 tracks that are earning the most money"""
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     track_sales = unique_sales.drop(
@@ -169,13 +169,13 @@ def get_top_3_grossing_tracks(data: pd.DataFrame) -> pd.DataFrame:
     track_sales = track_sales.groupby(
         'item_name')['amount'].sum()
     track_sales = (
-        track_sales/100).sort_values(ascending=False).head(3).reset_index()
+        track_sales/100).sort_values(ascending=False).head(5).reset_index()
 
     return track_sales
 
 
 def get_album_genres(data: pd.DataFrame, selected: list[str]) -> pd.DataFrame:
-    """Returns a dataframe of the top 3 sold albums which includes the album name, artist, genre and amount"""
+    """Returns a dataframe of album and its genre if the album is in a specified list of albums"""
 
     album_sales = data[data['item_type'] == 'album']
 
