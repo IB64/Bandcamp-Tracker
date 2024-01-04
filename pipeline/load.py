@@ -1,8 +1,6 @@
 """Script which loads data to the tables in the database"""
 from os import environ
-from time import perf_counter
 
-from dotenv import load_dotenv
 from psycopg2 import extensions, connect
 import pandas as pd
 from rapidfuzz.distance import Levenshtein
@@ -75,7 +73,7 @@ def load_countries(new_country: str, db_connection: extensions.connection) -> No
         for country in countries:
             if country[1] == new_country:
                 return
-        
+
         cur.execute(f"INSERT INTO country(country) VALUES ('{new_country}')")
         db_connection.commit()
 
@@ -90,18 +88,20 @@ def load_items(new_item: pd.Series, db_connection: extensions.connection) -> Non
         for item in items:
             if item[2] == new_item['title']:
                 return
-                
-            
+
+
         cur.execute(f"SELECT item_type_id FROM item_type WHERE item_type='{new_item['type']}'")
         item_type_id = cur.fetchone()[0]
         new_item['artist'] = new_item['artist'].replace("'", "''")
-        cur.execute(f"SELECT artist_id FROM artist WHERE artist_name='{new_item['artist'].lower()}'")
+        cur.execute(f"""SELECT artist_id FROM artist
+                    WHERE artist_name='{new_item['artist'].lower()}'""")
         artist_id = cur.fetchone()[0]
         new_item['title'] = new_item['title'].replace("'", "''")
-        cur.execute(f"""INSERT INTO item(item_type_id, item_name, artist_id, item_image) 
-                    VALUES ({item_type_id}, '{new_item['title']}', {artist_id}, '{new_item['image']}')""")
+        cur.execute(f"""INSERT INTO item(item_type_id, item_name, artist_id, item_image)
+                    VALUES ({item_type_id}, '{new_item['title']}', 
+                    {artist_id}, '{new_item['image']}')""")
         db_connection.commit()
-        
+
 def load_item_genres(new_item: pd.Series, db_connection: extensions.connection) -> None:
     """
     Connects the items to the genres through table IDs.
@@ -110,7 +110,7 @@ def load_item_genres(new_item: pd.Series, db_connection: extensions.connection) 
         new_item['title'] = new_item['title'].replace("'", "''")
         cur.execute(f"SELECT item_id FROM item WHERE item_name = '{new_item['title']}'")
         item_id = cur.fetchone()[0]
-        
+
         cur.execute(f"SELECT genre_id FROM genre WHERE genre='{new_item['tags'].lower()}'")
         genre_id = cur.fetchone()[0]
 
@@ -118,8 +118,8 @@ def load_item_genres(new_item: pd.Series, db_connection: extensions.connection) 
         item_genres = cur.fetchall()
         for item_genre in item_genres:
             if item_genre[1] == item_id and item_genre[2] == genre_id:
-                return 
-    
+                return
+
 
         cur.execute(f"INSERT INTO item_genre(item_id, genre_id) VALUES ({item_id},{genre_id})")
         db_connection.commit()
@@ -136,8 +136,9 @@ def load_sales_event(new_sale: pd.Series, db_connection: extensions.connection) 
         cur.execute(f"SELECT item_id FROM item WHERE item_name='{new_sale['title']}'")
         item_id = cur.fetchone()[0]
 
-        cur.execute(f"""INSERT INTO sale_event(sale_time, amount, country_id, item_id) 
-                    VALUES ('{new_sale['at']}', {new_sale['amount_paid_usd']}, {country_id}, {item_id}) """)
+        cur.execute(f"""INSERT INTO sale_event(sale_time, amount, country_id, item_id)
+                    VALUES ('{new_sale['at']}', {new_sale['amount_paid_usd']}, 
+                    {country_id}, {item_id}) """)
         db_connection.commit()
 
 def load_data(sale_df_flat_tags: pd.DataFrame, sale_df: pd.DataFrame, con: extensions.connection) -> None:
