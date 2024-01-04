@@ -3,3 +3,6 @@ bs4
 lxml
 spacy
 pandas
+python-dotenv
+psycopg2
+rapidfuzz
