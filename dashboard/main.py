@@ -197,7 +197,7 @@ if __name__ == "__main__":
     connection = get_db_connection()
     duplicate_df = load_all_data(connection)
 
-    st.title('BandCamp Analysis 🎵')
+    st.title('BandCamp Analytics 🎵')
 
     with st.container(border=True):
         st.subheader('Top Charts')
@@ -270,4 +270,4 @@ if __name__ == "__main__":
         st.subheader(
             'Analysis of Specific Tracks and Albums')
 
-        st.text_input('Search for a Track or Album')
+        track = st.text_input('Search for a Track or Album')
