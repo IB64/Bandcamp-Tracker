@@ -1,5 +1,6 @@
 """Script which loads data to the tables in the database"""
 from os import environ
+from time import perf_counter
 
 from dotenv import load_dotenv
 from psycopg2 import extensions, connect
@@ -57,6 +58,7 @@ def load_artists(new_artist, db_connection: extensions.connection):
             if artist[1] == new_artist.lower():
                 return
 
+        new_artist = new_artist.replace("'", "''")
         cur.execute(f"INSERT INTO artist(artist_name) VALUES ('{new_artist.lower()}');")
         db_connection.commit()
 
@@ -99,7 +101,7 @@ def load_items(new_item, db_connection: extensions.connection):
         
 def load_item_genres(new_item, db_connection):
     """
-    Connects to items to the genres. Currently will store duplicates.
+    Connects to items to the genres.
     """
     with db_connection.cursor() as cur:
         new_item['title'] = new_item['title'].replace("'", "''")
@@ -108,19 +110,52 @@ def load_item_genres(new_item, db_connection):
         
         cur.execute(f"SELECT genre_id FROM genre WHERE genre='{new_item['tags'].lower()}'")
         genre_id = cur.fetchone()[0]
+
+        cur.execute(f"SELECT * FROM item_genre;")
+        item_genres = cur.fetchall()
+        for item_genre in item_genres:
+            if item_genre[1] == item_id and item_genre[2] == genre_id:
+                return 
+    
+
         cur.execute(f"INSERT INTO item_genre(item_id, genre_id) VALUES ({item_id},{genre_id})")
         db_connection.commit()
 
 def load_sales_event(new_sale, db_connection):
-    pass
+    with db_connection.cursor() as cur:
+        cur.execute(f"SELECT country_id FROM country WHERE country='{new_sale['country']}';")
+        country_id = cur.fetchone()[0]
+
+        new_sale['title'] = new_sale['title'].replace("'", "''")
+        cur.execute(f"SELECT item_id FROM item WHERE item_name='{new_sale['title']}'")
+        item_id = cur.fetchone()[0]
+
+        cur.execute(f"""INSERT INTO sale_event(sale_time, amount, country_id, item_id) 
+                    VALUES ('{new_sale['at']}', {new_sale['amount_paid_usd']}, {country_id}, {item_id}) """)
+        db_connection.commit()
+
+def load_data(sale_df_flat_tags: pd.DataFrame, sale_df: pd.DataFrame, con: extensions.connection):
+    sale_df_flat_tags['tags'].apply(load_genres, db_connection=con)
+    print("Tags added")
+    sale_df_flat_tags['artist'].apply(load_artists, db_connection=con)
+    print("Artists added")
+    sale_df_flat_tags['country'].apply(load_countries, db_connection=con)
+    print("Countries added")
+    sale_df_flat_tags.apply(load_items, db_connection=con, axis=1)
+    print("Items added")
+    sale_df_flat_tags.apply(load_item_genres, db_connection=con, axis=1)
+    print("Item genres added")
+    sale_df.apply(load_sales_event, db_connection=con, axis=1)
+    print("Sales added")
 
 if __name__ == "__main__":
     load_dotenv()
     music_df = pd.read_csv("clean_data.csv")
+    music_df_not_clean_tags = pd.read_csv("clean_data_no_tags.csv")
 
-    con = get_db_connection()
-    #music_df['tags'].apply(load_genres, db_connection=con)
-    #music_df['artist'].apply(load_artists, db_connection=con)
-    #music_df['country'].apply(load_countries, db_connection=con)
-    #music_df.apply(load_items, db_connection=con, axis=1)
-    #music_df.apply(load_item_genres, db_connection=con, axis=1)
+    connection = get_db_connection()
+    start = perf_counter()
+
+    load_data(music_df, music_df_not_clean_tags, connection)
+
+    print(f"Time taken: {perf_counter() - start}")
