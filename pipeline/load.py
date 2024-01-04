@@ -22,7 +22,7 @@ def get_db_connection() -> extensions.connection:
     except ConnectionError:
         print("Error: Cannot connect to the database")
 
-def load_genres(new_genre, db_connection: extensions.connection):
+def load_genres(new_genre: str, db_connection: extensions.connection) -> str:
     """
     Finds any unique genres or genres with a less then 75% match to any in the table 
     and uploads them to the table
@@ -46,7 +46,7 @@ def load_genres(new_genre, db_connection: extensions.connection):
         db_connection.commit()
         return new_genre
 
-def load_artists(new_artist, db_connection: extensions.connection):
+def load_artists(new_artist: str, db_connection: extensions.connection) -> None:
     """
     Finds any unique artists and uploads them to the table.
     """
@@ -64,7 +64,7 @@ def load_artists(new_artist, db_connection: extensions.connection):
         cur.execute(f"INSERT INTO artist(artist_name) VALUES ('{new_artist.lower()}');")
         db_connection.commit()
 
-def load_countries(new_country, db_connection: extensions.connection):
+def load_countries(new_country: str, db_connection: extensions.connection) -> None:
     """
     Finds any unique countries and uploads them to the table.
     """
@@ -79,7 +79,7 @@ def load_countries(new_country, db_connection: extensions.connection):
         cur.execute(f"INSERT INTO country(country) VALUES ('{new_country}')")
         db_connection.commit()
 
-def load_items(new_item, db_connection: extensions.connection):
+def load_items(new_item: pd.Series, db_connection: extensions.connection) -> None:
     """
     Finds any unique items and finds all the relevant data to upload to the table.
     """
@@ -102,7 +102,7 @@ def load_items(new_item, db_connection: extensions.connection):
                     VALUES ({item_type_id}, '{new_item['title']}', {artist_id}, '{new_item['image']}')""")
         db_connection.commit()
         
-def load_item_genres(new_item, db_connection):
+def load_item_genres(new_item: pd.Series, db_connection: extensions.connection) -> None:
     """
     Connects the items to the genres through table IDs.
     """
@@ -124,7 +124,7 @@ def load_item_genres(new_item, db_connection):
         cur.execute(f"INSERT INTO item_genre(item_id, genre_id) VALUES ({item_id},{genre_id})")
         db_connection.commit()
 
-def load_sales_event(new_sale, db_connection):
+def load_sales_event(new_sale: pd.Series, db_connection: extensions.connection) -> None:
     """
     Uploads all the sales events to the sales event table.
     """
@@ -140,7 +140,7 @@ def load_sales_event(new_sale, db_connection):
                     VALUES ('{new_sale['at']}', {new_sale['amount_paid_usd']}, {country_id}, {item_id}) """)
         db_connection.commit()
 
-def load_data(sale_df_flat_tags: pd.DataFrame, sale_df: pd.DataFrame, con: extensions.connection):
+def load_data(sale_df_flat_tags: pd.DataFrame, sale_df: pd.DataFrame, con: extensions.connection) -> None:
     """
     Finds all the required data to be uploaded to the correct table.
     """
@@ -156,15 +156,3 @@ def load_data(sale_df_flat_tags: pd.DataFrame, sale_df: pd.DataFrame, con: exten
     print("Item genres added")
     sale_df.apply(load_sales_event, db_connection=con, axis=1)
     print("Sales added")
-
-if __name__ == "__main__":
-    load_dotenv()
-    music_df = pd.read_csv("clean_data.csv")
-    music_df_not_clean_tags = pd.read_csv("clean_data_no_tags.csv")
-
-    connection = get_db_connection()
-    start = perf_counter()
-
-    load_data(music_df, music_df_not_clean_tags, connection)
-
-    print(f"Time taken: {perf_counter() - start}")
