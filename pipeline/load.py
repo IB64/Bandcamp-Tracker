@@ -111,6 +111,7 @@ def load_item_genres(new_item: pd.Series, db_connection: extensions.connection) 
         cur.execute(f"SELECT item_id FROM item WHERE item_name = '{new_item['title']}'")
         item_id = cur.fetchone()[0]
 
+        new_item['tags'] = new_item['tags'].replace("'", "''")
         cur.execute(f"SELECT genre_id FROM genre WHERE genre='{new_item['tags'].lower()}'")
         genre_id = cur.fetchone()[0]
 

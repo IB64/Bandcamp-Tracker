@@ -10,6 +10,14 @@ variable "DB_PASSWORD" {
     type = string
 }
 
+variable "DB_IP" {
+    type= string
+}
+
+variable "DB_PORT" {
+    type = string
+}
+
 variable "VPC_ID" {
     type = string
     default = "vpc-04423dbb18410aece"
