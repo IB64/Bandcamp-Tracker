@@ -32,7 +32,7 @@ CREATE TABLE item(
     item_type_id INT NOT NULL,
     item_name VARCHAR NOT NULL,
     artist_id INT NOT NULL,
-    item_image VARCHAR NOT NULL UNIQUE,
+    item_image VARCHAR NOT NULL,
     PRIMARY KEY (item_id),
     FOREIGN KEY (item_type_id) REFERENCES item_type(item_type_id) ON DELETE CASCADE,
     FOREIGN KEY (artist_id) REFERENCES artist(artist_id) ON DELETE CASCADE

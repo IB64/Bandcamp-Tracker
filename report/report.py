@@ -8,7 +8,6 @@ from psycopg2 import extensions, connect
 import pandas as pd
 from fpdf import FPDF
 
-
 YESTERDAY_DATE = datetime.strftime(datetime.now() - timedelta(1), '%d-%m-%Y')
 
 
@@ -243,23 +242,39 @@ def get_number_of_sold_albums_and_tracks(data: pd.DataFrame) -> tuple:
     return albums_sold, tracks_sold
 
 
+def create_pdf_section(pdf: FPDF, dataframe: pd.DataFrame, title: str, description: str):
+    """Docstring"""
+
+    pdf.multi_cell(200, 10, txt=f"-------{title}-------")
+    pdf.multi_cell(
+        100, 10, txt=f"{description}")
+
+
+def get_table_for_pdf(pdf: FPDF, dataframe: pd.DataFrame):
+    """Returns...."""
+
+    table_data = dataframe.to_string(index=False).split('\n')
+    for row in table_data:
+        pdf.multi_cell(100, 10, txt=row)
+    pdf.ln(8)
+
+
 def generate_pdf_report(data):
     """Generates a pdf report that contains all the analysis for the previous day"""
 
     pdf = FPDF('P')
     pdf.add_page()
-    pdf.set_font("Arial", "B", size=24)
+    pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
+    pdf.set_font('DejaVu', '', 14)
 
     pdf.cell(
-        200, 10, txt=f"BandCamp Daily Report - {YESTERDAY_DATE}".encode('utf-8').decode('latin-1'), ln=True, align='C')
+        200, 10, txt=f"BandCamp Daily Report - {YESTERDAY_DATE}", ln=True, align='C')
     pdf.ln(10)
 
     # # Key Metrics
-    pdf.set_font("Arial", "B", size=18)
     key_metrics = get_key_analytics(data)
     # albums_sold, tracks_sold = get_number_of_sold_albums_and_tracks(data)
     pdf.cell(200, 10, txt='Overview', ln=True)
-    pdf.set_font("Arial", size=12)
     pdf.cell(
         200, 5, txt=f"Total number of sales: {key_metrics[0]}", ln=True)
     pdf.cell(200, 5, txt=f"Total Income: ${key_metrics[1]}", ln=True)
@@ -271,73 +286,62 @@ def generate_pdf_report(data):
 
     # Artists Data
     top_5_popular_artists = get_top_5_popular_artists(data)
-    pdf.set_font("Arial", "B", size=18)
-    pdf.multi_cell(100, 10, txt=f"----Top 5 Popular Artists----")
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(
-        100, 10, txt=f"Top 5 artists that have sold the most items")
-    table_data = top_5_popular_artists.to_string(index=False).split('\n')
-    for row in table_data:
-        pdf.multi_cell(100, 10, txt=row)
-    pdf.ln(8)
+    create_pdf_section(pdf, top_5_popular_artists, 'Top 5 Popular Artists',
+                       'Shows the Top 5 artists that have sold the most items')
+    get_table_for_pdf(pdf, top_5_popular_artists)
 
     top_5_grossing_artists = get_top_5_grossing_artists(data)
-    pdf.set_font("Arial", "B", size=18)
-    pdf.cell(200, 10, txt=f"-------Top 5 Grossing Artists-------", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.cell(
-        200, 10, txt=f"This is showing the top 5 artists that are earning the most", ln=True)
+    create_pdf_section(pdf, top_5_popular_artists, 'Top 5 Grossing Artists',
+                       'Shows the Top 5 artists that earn the most')
     table_data = top_5_grossing_artists.to_string(index=False).split('\n')
     for row in table_data:
         pdf.cell(200, 10, txt=row, ln=True)
     pdf.ln(8)
 
-    # # Album and Track Data
+    # Album and Track Data
     top_5_albums = get_top_5_sold_albums(data)
     top_5_tracks = get_top_5_sold_tracks(data)
 
-    pdf.set_font("Arial", "B", size=18)
-    pdf.cell(200, 10, txt=f"-------Top 5 Popular Albums-------", ln=True)
-    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt="-------Top 5 Popular Albums-------", ln=True)
     pdf.cell(
-        200, 10, txt=f"This is showing the top 5 albums sold", ln=True)
+        200, 10, txt="This is showing the top 5 albums sold", ln=True)
     table_data = top_5_albums.to_string(index=False).split('\n')
     for row in table_data:
-        pdf.cell(200, 10, txt=row.replace('\u200b', ''), ln=True)
+        pdf.cell(200, 10, txt=row, ln=True)
     pdf.ln(8)
 
-    pdf.set_font("Arial", "B", size=18)
-    pdf.cell(200, 10, txt=f"-------Top 5 Popular Tracks-------", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.cell(
-        200, 10, txt=f"This is showing the top 5 tracks sold", ln=True)
-    table_data = top_5_tracks.to_string(index=False).split('\n')
-    for row in table_data:
-        pdf.cell(200, 10, txt=row.replace('\u200b', ''), ln=True)
-    pdf.ln(8)
+    # pdf.set_font("Arial", "B", size=18)
+    # pdf.cell(200, 10, txt="-------Top 5 Popular Tracks-------", ln=True)
+    # pdf.set_font("Arial", size=12)
+    # pdf.cell(
+    #     200, 10, txt="This is showing the top 5 tracks sold", ln=True)
+    # table_data = top_5_tracks.to_string(index=False).split('\n')
+    # for row in table_data:
+    #     pdf.cell(200, 10, txt=row.replace('\u200b', ''), ln=True)
+    # pdf.ln(8)
 
-    top_5_grossing_albums = get_top_5_grossing_albums(data)
-    top_5_grossing_tracks = get_top_5_grossing_tracks(data)
+    # top_5_grossing_albums = get_top_5_grossing_albums(data)
+    # top_5_grossing_tracks = get_top_5_grossing_tracks(data)
 
-    pdf.set_font("Arial", "B", size=18)
-    pdf.cell(200, 10, txt=f"-------Top 5 Grossing Albums-------", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.cell(
-        200, 10, txt=f"This is showing the top 5 albums earning the most", ln=True)
-    table_data = top_5_grossing_albums.to_string(index=False).split('\n')
-    for row in table_data:
-        pdf.cell(200, 10, txt=row.replace('\u200b', ''), ln=True)
-    pdf.ln(8)
+    # pdf.set_font("Arial", "B", size=18)
+    # pdf.cell(200, 10, txt="-------Top 5 Grossing Albums-------", ln=True)
+    # pdf.set_font("Arial", size=12)
+    # pdf.cell(
+    #     200, 10, txt="This is showing the top 5 albums earning the most", ln=True)
+    # table_data = top_5_grossing_albums.to_string(index=False).split('\n')
+    # for row in table_data:
+    #     pdf.cell(200, 10, txt=row.replace('\u200b', ''), ln=True)
+    # pdf.ln(8)
 
-    pdf.set_font("Arial", "B", size=18)
-    pdf.cell(200, 10, txt=f"-------Top 5 Grossing Tracks-------", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.cell(
-        200, 10, txt=f"This is showing the top 5 tracks earning the most", ln=True)
-    table_data = top_5_grossing_tracks.to_string(index=False).split('\n')
-    for row in table_data:
-        pdf.cell(200, 10, txt=row.replace('\u200b', ''), ln=True)
-    pdf.ln(8)
+    # pdf.set_font("Arial", "B", size=18)
+    # pdf.cell(200, 10, txt="-------Top 5 Grossing Tracks-------", ln=True)
+    # pdf.set_font("Arial", size=12)
+    # pdf.cell(
+    #     200, 10, txt=f"This is showing the top 5 tracks earning the most", ln=True)
+    # table_data = top_5_grossing_tracks.to_string(index=False).split('\n')
+    # for row in table_data:
+    #     pdf.cell(200, 10, txt=row.replace('\u200b', ''), ln=True)
+    # pdf.ln(8)
 
     # top_5_albums_list = top_5_albums['item_name'].tolist()
     # top_5_tracks_list = top_5_tracks['item_name'].tolist()
@@ -346,40 +350,40 @@ def generate_pdf_report(data):
     # track_genres = get_track_genres(data, top_5_tracks_list)
 
     # Genre Data
-    top_genres = get_popular_genre(data)
-    pdf.set_font("Arial", "B", size=18)
-    pdf.cell(200, 10, txt=f"-------Top 5 Genres-------", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.cell(
-        200, 10, txt=f"This is showing the top 5 genres that were most bought", ln=True)
-    table_data = top_genres.to_string(index=False).split('\n')
-    for row in table_data:
-        pdf.cell(200, 10, txt=row, ln=True)
-    pdf.ln(8)
+    # top_genres = get_popular_genre(data)
+    # pdf.set_font("Arial", "B", size=18)
+    # pdf.cell(200, 10, txt="-------Top 5 Genres-------", ln=True)
+    # pdf.set_font("Arial", size=12)
+    # pdf.cell(
+    #     200, 10, txt="This is showing the top 5 genres that were most bought", ln=True)
+    # table_data = top_genres.to_string(index=False).split('\n')
+    # for row in table_data:
+    #     pdf.cell(200, 10, txt=row.replace("\u200b", ""), ln=True)
+    # pdf.ln(8)
 
-    # Country Sales
-    sales_per_country = get_countries_with_most_sales(data)
-    artists_per_country = get_popular_artist_per_country(data)
+    # # Country Sales
+    # sales_per_country = get_countries_with_most_sales(data)
+    # artists_per_country = get_popular_artist_per_country(data)
 
-    pdf.set_font("Arial", "B", size=18)
-    pdf.cell(200, 10, txt=f"-------Sales Per Country-------", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.cell(
-        200, 10, txt=f"This is showing the number os sales there have been per country", ln=True)
-    table_data = sales_per_country.to_string(index=False).split('\n')
-    for row in table_data:
-        pdf.cell(200, 10, txt=row, ln=True)
-    pdf.ln(8)
+    # pdf.set_font("Arial", "B", size=18)
+    # pdf.cell(200, 10, txt="-------Sales Per Country-------", ln=True)
+    # pdf.set_font("Arial", size=12)
+    # pdf.cell(
+    #     200, 10, txt="This is showing the number os sales there have been per country", ln=True)
+    # table_data = sales_per_country.to_string(index=False).split('\n')
+    # for row in table_data:
+    #     pdf.cell(200, 10, txt=row, ln=True)
+    # pdf.ln(8)
 
-    pdf.set_font("Arial", "B", size=18)
-    pdf.cell(200, 10, txt=f"-------Top Artist per country-------", ln=True)
-    pdf.set_font("Arial", size=12)
-    pdf.cell(
-        200, 10, txt=f"This is showing the top Artist for every country", ln=True)
-    table_data = artists_per_country.to_string(index=False).split('\n')
-    for row in table_data:
-        pdf.cell(200, 10, txt=row, ln=True)
-    pdf.ln(8)
+    # pdf.set_font("Arial", "B", size=18)
+    # pdf.cell(200, 10, txt="-------Top Artist per country-------", ln=True)
+    # pdf.set_font("Arial", size=12)
+    # pdf.cell(
+    #     200, 10, txt="This is showing the top Artist for every country", ln=True)
+    # table_data = artists_per_country.to_string(index=False).split('\n')
+    # for row in table_data:
+    #     pdf.cell(200, 10, txt=row, ln=True)
+    # pdf.ln(8)
 
     return pdf.output("BandCamp-Report.pdf")
 
@@ -395,7 +399,7 @@ def handler(event=None, context=None) -> dict:
 
     pdf_report = generate_pdf_report(all_data)
 
-    return {"html_report": pdf_report}
+    return {"pdf_report": pdf_report}
 
 
 if __name__ == "__main__":
@@ -409,10 +413,8 @@ if __name__ == "__main__":
     yesterdays_data = load_yesterday_data(connection)
 
     print(all_data)
-    albums_sold, tracks_sold = get_number_of_sold_albums_and_tracks(all_data)
-    top_5_albums = get_top_5_sold_albums(all_data)
-    print(albums_sold)
-    print(tracks_sold)
-    print(top_5_albums)
+
+    top_5_grossing_artists = get_top_5_grossing_artists(all_data)
+    print(top_5_grossing_artists)
 
     print(generate_pdf_report(all_data))
