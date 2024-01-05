@@ -252,10 +252,10 @@ def generate_html_string(data: pd.DataFrame) -> str:
     top_5_tracks = get_top_5_sold_tracks(data)
     top_5_grossing_albums = get_top_5_grossing_albums(data)
     top_5_grossing_tracks = get_top_5_grossing_tracks(data)
-    # top_5_albums_list = top_5_albums['artist'].tolist()
-    # top_5_tracks_list = top_5_tracks['artist'].tolist()
-    # album_genres = get_album_genres(data, top_5_albums_list)
-    # track_genres = get_track_genres(data, top_5_tracks_list)
+    top_5_albums_list = top_5_albums['artist'].tolist()
+    top_5_tracks_list = top_5_tracks['artist'].tolist()
+    album_genres = get_album_genres(data, top_5_albums_list)
+    track_genres = get_track_genres(data, top_5_tracks_list)
     top_genres = get_popular_genre(data)
     sales_per_country = get_countries_with_most_sales(data)
     artists_per_country = get_popular_artist_per_country(data)
@@ -389,8 +389,6 @@ def handler(event=None, context=None) -> dict:
 
     all_data = load_all_data(connection)
 
-    pdf_report = generate_pdf_report(all_data)
-
     return {"pdf_report": pdf_report}
 
 
@@ -424,7 +422,18 @@ if __name__ == "__main__":
     connection = get_db_connection()
 
     all_data = load_all_data(connection)
+    top_5_albums = get_top_5_sold_albums(all_data)
+    top_5_tracks = get_top_5_sold_tracks(all_data)
+    top_5_grossing_albums = get_top_5_grossing_albums(all_data)
+    top_5_grossing_tracks = get_top_5_grossing_tracks(all_data)
+    top_5_albums_list = top_5_albums['artist'].tolist()
+    top_5_tracks_list = top_5_tracks['artist'].tolist()
+    album_genres = get_album_genres(all_data, top_5_albums_list)
+    track_genres = get_track_genres(all_data, top_5_tracks_list)
 
-    html_report = generate_html_string(all_data)
+    print(top_5_albums)
+    print(album_genres)
 
-    generate_pdf_report(all_data)
+    # html_report = generate_html_string(all_data)
+
+    # generate_pdf_report(all_data)
