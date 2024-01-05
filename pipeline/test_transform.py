@@ -55,7 +55,7 @@ class TestTransform:
                 "amount_paid_usd": [10, 20], "artist": ["Artist1 ft. Artist2", "Artist2"]}
         df = pd.DataFrame(data)
 
-        cleaned_df = clean_dataframe(df)
+        cleaned_df = clean_dataframe(df, False)
 
         assert "tags" in cleaned_df.columns
         assert "title" in cleaned_df.columns
