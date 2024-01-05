@@ -9,7 +9,9 @@ from transform import (
     convert_to_df,
     clean_tags,
     clean_artists,
+    clean_titles,
     clean_dataframe,
+    has_special_characters
 )
 
 
@@ -39,6 +41,13 @@ class TestTransform:
         assert Counter(clean_tags(["Rnb", "rock"])) == Counter(["R&B", "Rock"])
         assert Counter(clean_tags(["John-Doe", "jazz"])) == Counter(["Jazz"])
 
+    def test_clean_titles(self):
+        """
+        Tests cleaning titles
+        """
+        assert clean_titles("title") == "title"
+        assert clean_titles("\n    title    \n") == "title"
+
     def test_clean_artists(self):
         """
         Test whether featured artist removal works
@@ -51,8 +60,10 @@ class TestTransform:
         """
         Test whether cleaning produces expected outcomes
         """
-        data = {"tags": [["rock"], ["pop", "jazz"]], "title": ["Song1", "Song2"],
-                "amount_paid_usd": [10, 20], "artist": ["Artist1 ft. Artist2", "Artist2"]}
+        data = {"tags": [["rock"], ["pop", "jazz"]],
+                "title": ["Song1", "Song2"],
+                "amount_paid_usd": [10, 20],
+                "artist": ["Artist1 ft. Artist2", "Artist2"]}
         df = pd.DataFrame(data)
 
         cleaned_df = clean_dataframe(df, False)
@@ -63,21 +74,67 @@ class TestTransform:
         assert "artist" in cleaned_df.columns
         assert cleaned_df["amount_paid_usd"].dtype == "int64"
 
+    def test_special_characters(self):
+        """
+        Test function "has_special_characters" with base cases
+        """
+        assert has_special_characters("a") is False
+        assert has_special_characters("þ") is False
+        assert has_special_characters("漢字") is True
+        assert has_special_characters("a字") is True
+
 
 class TestTransformErrors:
     """
     Tests for edge cases
     """
 
-    def test_no_tags(self):
+    def test_has_special_characters_empty_string(self):
         """
-        Test whether clean_tags() returns ["Other"] if no tags or a single empty tag are given
+        Test whether correct value is returned by func "has_special_character" with empty string
+        """
+        assert has_special_characters("") is False
+
+    def test_clean_artists_edge_cases(self):
+        """
+        Test edge cases for func clean_artists
+        """
+        assert pd.isnull(clean_artists("漢字")) is True
+
+    def test_clean_titles_edge_cases(self):
+        """
+        Test edge cases for func clean_titles
+        """
+        assert pd.isnull(clean_titles("漢字")) is True
+
+    def test_clean_tags_edge_cases(self):
+        """
+        Test edge cases for func clean_tags
         """
         assert clean_tags([]) == ["Other"]
         assert clean_tags([""]) == ["Other"]
-
-    def test_empty_string(self):
-        """
-        Test whether empty strings are ignored
-        """
         assert Counter(clean_tags(["rock", ""])) == Counter(["Rock"])
+
+    def test_clean_dataframe_special_characters(self):
+        """
+        Tests whether clean_dataframe handles special characters
+        i.e. drops rows with special characters
+        """
+
+        data = {"tags": [["rock"], ["漢字", "jazz"], ["soul"]],
+                "title": ["Song1", "Song2", "Song3"],
+                "amount_paid_usd": [10, 20, 30],
+                "artist": ["Artist1 ft. Artist2", "Artist2", "Artist3"]}
+        df = pd.DataFrame(data)
+
+        wanted_data = {
+            "tags": ["Rock", "Jazz", "Soul"],
+            "title": ["Song1", "Song2", "Song3"],
+            "amount_paid_usd": [1000, 2000, 3000],
+            "artist": ["Artist1", "Artist2", "Artist3"]
+        }
+
+        cleaned_df = clean_dataframe(df, False)
+        wanted_result = pd.DataFrame(wanted_data)
+
+        assert cleaned_df.equals(wanted_result) is True
