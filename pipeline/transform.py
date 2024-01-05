@@ -8,6 +8,7 @@ DNB = ['Drum & Bass', 'Dnb', 'Drum N Bass']
 RNB = ['Rnb', 'R&B']
 FEATURING = ["ft.", "featuring"]
 NLP_MODEL = spacy.load("en_core_web_sm")
+EXTENDED_ASCII_RANGE = 255
 
 
 def convert_to_df(extracted_data: list[dict]):
@@ -15,6 +16,16 @@ def convert_to_df(extracted_data: list[dict]):
     Converts a list of dictionaries into a pandas dataframe and returns it.
     """
     return pd.DataFrame(extracted_data)
+
+
+def has_special_characters(name: str) -> bool:
+    """
+    If a given name has any special characters outside English, then return True
+    """
+    for character in name:
+        if ord(character) > EXTENDED_ASCII_RANGE:
+            return True
+    return False
 
 
 def clean_tags(tags: list[str]) -> list[str]:
@@ -32,13 +43,15 @@ def clean_tags(tags: list[str]) -> list[str]:
         else:
             if tag == "":
                 continue
-            if '-' in tag:
-                tag = tag.replace('-', ' ')
+            if has_special_characters(tag):
+                continue
             if '/' in tag:
                 tags = tag.split('/')
                 for extra_tag in tags:
                     tags_set.add(extra_tag.title())
                 continue
+            if '-' in tag:
+                tag = tag.replace('-', ' ')
             if tag[-1] == '.':
                 tag = tag[:-1]
             if tag.title() in DNB:
@@ -53,27 +66,30 @@ def clean_tags(tags: list[str]) -> list[str]:
     return ["Other"]
 
 
-def has_special_characters(name: str):
-    """
-    If a given name has any special characters outside English, then return True
-    """
-    for character in name:
-        print(ord(character))
-        if ord(character) > 255:
-            return True
-    return False
-
-
 def clean_artists(name: str) -> str:
     """
     For artist names that feature other artists,
-    featured artists are erased and only the main artist is left
+    featured artists are erased and only the main artist is left.
+    If special characters are detected, then change to "na"
     """
+    if has_special_characters(name):
+        return pd.NaT
+
     for word in FEATURING:
         if word in name:
             artists = name.split(f" {word}")
             return artists[0]
     return name
+
+
+def clean_titles(name: str) -> str:
+    """
+    Clean the title. Removes any whitespace and new lines.
+    If special characters are detected, then change to "na"
+    """
+    if has_special_characters(name):
+        return pd.NaT
+    return name.strip()
 
 
 def clean_dataframe(dataframe: pd.DataFrame, sales_event: bool) -> pd.DataFrame:
@@ -83,12 +99,14 @@ def clean_dataframe(dataframe: pd.DataFrame, sales_event: bool) -> pd.DataFrame:
     """
     dataframe['tags'] = dataframe['tags'].apply(clean_tags)
 
-    dataframe['title'] = dataframe['title'].str.strip()
+    dataframe['title'] = dataframe['title'].apply(clean_titles)
 
     dataframe['amount_paid_usd'] = dataframe['amount_paid_usd'] * 100
     dataframe['amount_paid_usd'] = dataframe['amount_paid_usd'].astype(int)
 
     dataframe['artist'] = dataframe['artist'].apply(clean_artists)
+
+    dataframe = dataframe.dropna()
 
     if sales_event:
         dataframe['amount_paid_usd'] = dataframe['amount_paid_usd'] / 100

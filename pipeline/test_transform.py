@@ -99,13 +99,13 @@ class TestTransformErrors:
         """
         Test edge cases for func clean_artists
         """
-        assert clean_artists("漢字") == "na"
+        assert pd.isnull(clean_artists("漢字")) is True
 
     def test_clean_titles_edge_cases(self):
         """
         Test edge cases for func clean_titles
         """
-        assert clean_titles("漢字") == "na"
+        assert pd.isnull(clean_titles("漢字")) is True
 
     def test_clean_tags_edge_cases(self):
         """
@@ -117,7 +117,8 @@ class TestTransformErrors:
 
     def test_clean_dataframe_special_characters(self):
         """
-        Tests whether clean_dataframe handles special characters i.e. drops rows with special characters
+        Tests whether clean_dataframe handles special characters
+        i.e. drops rows with special characters
         """
 
         data = {"tags": [["rock"], ["漢字", "jazz"], ["soul"]],
@@ -129,7 +130,7 @@ class TestTransformErrors:
         wanted_data = {
             "tags": ["Rock", "Jazz", "Soul"],
             "title": ["Song1", "Song2", "Song3"],
-            "amount_paid_usd": [10, 20, 30],
+            "amount_paid_usd": [1000, 2000, 3000],
             "artist": ["Artist1", "Artist2", "Artist3"]
         }
 
