@@ -9,6 +9,7 @@ from transform import (
     convert_to_df,
     clean_tags,
     clean_artists,
+    clean_titles,
     clean_dataframe,
     has_special_characters
 )
@@ -39,6 +40,13 @@ class TestTransform:
             ["DNB", "Jazz"])
         assert Counter(clean_tags(["Rnb", "rock"])) == Counter(["R&B", "Rock"])
         assert Counter(clean_tags(["John-Doe", "jazz"])) == Counter(["Jazz"])
+
+    def test_clean_titles(self):
+        """
+        Tests cleaning titles
+        """
+        assert clean_titles("title") == "title"
+        assert clean_titles("\n    title    \n") == "title"
 
     def test_clean_artists(self):
         """
@@ -81,24 +89,31 @@ class TestTransformErrors:
     Tests for edge cases
     """
 
-    def test_no_tags(self):
-        """
-        Test whether clean_tags() returns ["Other"] if no tags or a single empty tag are given
-        """
-        assert clean_tags([]) == ["Other"]
-        assert clean_tags([""]) == ["Other"]
-
-    def test_tag_empty_string(self):
-        """
-        Test whether empty strings are ignored when cleaning tags
-        """
-        assert Counter(clean_tags(["rock", ""])) == Counter(["Rock"])
-
     def test_has_special_characters_empty_string(self):
         """
         Test whether correct value is returned by func "has_special_character" with empty string
         """
         assert has_special_characters("") is False
+
+    def test_clean_artists_edge_cases(self):
+        """
+        Test edge cases for func clean_artists
+        """
+        assert clean_artists("漢字") == "na"
+
+    def test_clean_titles_edge_cases(self):
+        """
+        Test edge cases for func clean_titles
+        """
+        assert clean_titles("漢字") == "na"
+
+    def test_clean_tags_edge_cases(self):
+        """
+        Test edge cases for func clean_tags
+        """
+        assert clean_tags([]) == ["Other"]
+        assert clean_tags([""]) == ["Other"]
+        assert Counter(clean_tags(["rock", ""])) == Counter(["Rock"])
 
     def test_clean_dataframe_special_characters(self):
         """
