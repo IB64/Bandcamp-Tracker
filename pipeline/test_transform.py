@@ -52,11 +52,13 @@ class TestTransform:
         """
         Test whether cleaning produces expected outcomes
         """
-        data = {"tags": [["rock"], ["pop", "jazz"]], "title": ["Song1", "Song2"],
-                "amount_paid_usd": [10, 20], "artist": ["Artist1 ft. Artist2", "Artist2"]}
+        data = {"tags": [["rock"], ["pop", "jazz"]],
+                "title": ["Song1", "Song2"],
+                "amount_paid_usd": [10, 20],
+                "artist": ["Artist1 ft. Artist2", "Artist2"]}
         df = pd.DataFrame(data)
 
-        cleaned_df = clean_dataframe(df, True)
+        cleaned_df = clean_dataframe(df, False)
 
         assert "tags" in cleaned_df.columns
         assert "title" in cleaned_df.columns
@@ -97,3 +99,26 @@ class TestTransformErrors:
         Test whether correct value is returned by func "has_special_character" with empty string
         """
         assert has_special_characters("") is False
+
+    def test_clean_dataframe_special_characters(self):
+        """
+        Tests whether clean_dataframe handles special characters i.e. drops rows with special characters
+        """
+
+        data = {"tags": [["rock"], ["漢字", "jazz"], ["soul"]],
+                "title": ["Song1", "Song2", "Song3"],
+                "amount_paid_usd": [10, 20, 30],
+                "artist": ["Artist1 ft. Artist2", "Artist2", "Artist3"]}
+        df = pd.DataFrame(data)
+
+        wanted_data = {
+            "tags": ["Rock", "Jazz", "Soul"],
+            "title": ["Song1", "Song2", "Song3"],
+            "amount_paid_usd": [10, 20, 30],
+            "artist": ["Artist1", "Artist2", "Artist3"]
+        }
+
+        cleaned_df = clean_dataframe(df, False)
+        wanted_result = pd.DataFrame(wanted_data)
+
+        assert cleaned_df.equals(wanted_result) is True
