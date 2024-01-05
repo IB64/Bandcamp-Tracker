@@ -128,11 +128,3 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
                 data.append(entry)
 
     return data
-
-
-if __name__ == "__main__":
-    start = perf_counter()
-    sales_data = load_sales_data(datetime.now())
-    extracted_data = extract_data_from_json(sales_data)
-
-    print(f"Time taken: {perf_counter() - start}")
