@@ -58,7 +58,7 @@ def clean_artists(name: str) -> str:
     return artists[0]
 
 
-def clean_dataframe(dataframe: pd.DataFrame) -> pd.DataFrame:
+def clean_dataframe(dataframe: pd.DataFrame, sales_event: bool) -> pd.DataFrame:
     """
     Cleans the tags, the title, the amount paid for the album / track
     and the artist.
@@ -71,6 +71,11 @@ def clean_dataframe(dataframe: pd.DataFrame) -> pd.DataFrame:
     dataframe['amount_paid_usd'] = dataframe['amount_paid_usd'].astype(int)
 
     dataframe['artist'] = dataframe['artist'].apply(clean_artists)
+
+    if sales_event:
+        dataframe['amount_paid_usd'] = dataframe['amount_paid_usd'] / 100
+        dataframe['amount_paid_usd'] = dataframe['amount_paid_usd'].astype(int)
+        return dataframe
 
     dataframe = dataframe.explode('tags')
 
