@@ -10,6 +10,7 @@ from transform import (
     clean_tags,
     clean_artists,
     clean_dataframe,
+    has_special_characters
 )
 
 
@@ -55,13 +56,22 @@ class TestTransform:
                 "amount_paid_usd": [10, 20], "artist": ["Artist1 ft. Artist2", "Artist2"]}
         df = pd.DataFrame(data)
 
-        cleaned_df = clean_dataframe(df)
+        cleaned_df = clean_dataframe(df, True)
 
         assert "tags" in cleaned_df.columns
         assert "title" in cleaned_df.columns
         assert "amount_paid_usd" in cleaned_df.columns
         assert "artist" in cleaned_df.columns
         assert cleaned_df["amount_paid_usd"].dtype == "int64"
+
+    def test_special_characters(self):
+        """
+        Test function "has_special_characters" with base cases
+        """
+        assert has_special_characters("a") is False
+        assert has_special_characters("þ") is False
+        assert has_special_characters("漢字") is True
+        assert has_special_characters("a字") is True
 
 
 class TestTransformErrors:
@@ -76,8 +86,14 @@ class TestTransformErrors:
         assert clean_tags([]) == ["Other"]
         assert clean_tags([""]) == ["Other"]
 
-    def test_empty_string(self):
+    def test_tag_empty_string(self):
         """
-        Test whether empty strings are ignored
+        Test whether empty strings are ignored when cleaning tags
         """
         assert Counter(clean_tags(["rock", ""])) == Counter(["Rock"])
+
+    def test_has_special_characters_empty_string(self):
+        """
+        Test whether correct value is returned by func "has_special_character" with empty string
+        """
+        assert has_special_characters("") is False

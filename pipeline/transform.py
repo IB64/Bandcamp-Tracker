@@ -27,7 +27,7 @@ def clean_tags(tags: list[str]) -> list[str]:
     for tag in tags:
         doc = NLP_MODEL(tag)
         for ent in doc.ents:
-            if ent.label_ == "GPE" or ent.label_ == "PERSON":
+            if ent.label_ in ("GPE", "PERSON"):
                 break
         else:
             if tag == "":
@@ -50,8 +50,18 @@ def clean_tags(tags: list[str]) -> list[str]:
     new_tags = list(tags_set)
     if new_tags:
         return new_tags
-    else:
-        return ["Other"]
+    return ["Other"]
+
+
+def has_special_characters(name: str):
+    """
+    If a given name has any special characters outside English, then return True
+    """
+    for character in name:
+        print(ord(character))
+        if ord(character) > 255:
+            return True
+    return False
 
 
 def clean_artists(name: str) -> str:
