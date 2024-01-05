@@ -9,7 +9,8 @@ import pytest
 from requests.exceptions import Timeout, HTTPError
 
 from extract import (
-    unix_time_millis,
+    get_minute_rounded_down,
+    unix_time_seconds,
     load_sales_data,
     get_tags_from_url,
     get_title_from_url,
@@ -17,7 +18,7 @@ from extract import (
 )
 
 EXAMPLE_DATETIME = datetime(2023, 1, 1)
-EXAMPLE_UNIX_TIME = 1672531200000
+EXAMPLE_UNIX_TIME = 1672531200
 
 
 class TestBandcampAPI:
@@ -25,12 +26,13 @@ class TestBandcampAPI:
     Class used for testing base cases
     """
 
-    def test_unix_time_millis(self):
+    def test_unix_time_seconds(self):
         """
         Test whether the function returns the correct value
         """
-        result = unix_time_millis(EXAMPLE_DATETIME)
+        result = unix_time_seconds(EXAMPLE_DATETIME)
         assert result == EXAMPLE_UNIX_TIME
+        assert isinstance(result, int) is True
 
     @patch("extract.requests.get")
     def test_load_sales_data(self, mock_get):
@@ -101,6 +103,14 @@ class TestBandcampAPI:
             "image": "https://exampleimage.com"
         }]
         assert result == expected
+
+    def test_get_minute_rounded_down(self):
+        """
+        Test for base cases for func get_minute_rounded_down
+        """
+        dt = datetime(2024, 1, 5, 12, 34, 56, 789000)
+        expected_result = datetime(2024, 1, 5, 12, 34, 0, 0)
+        assert get_minute_rounded_down(dt) == expected_result
 
 
 class TestBandCampAPIFails:

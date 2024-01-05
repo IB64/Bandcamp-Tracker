@@ -1,12 +1,11 @@
 """
 Script to interact with the Bandcamp API and extract relevant information
 """
+
 from datetime import datetime
-from time import perf_counter
 from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
-import pandas as pd
 import requests
 from requests.exceptions import Timeout, HTTPError
 
@@ -17,18 +16,33 @@ TRACK = "t"
 FIVE_MINS_IN_SECONDS = 300
 
 
-def unix_time_millis(dt: datetime) -> float:
+def unix_time_seconds(dt: datetime) -> int:
     """
-    Given a datetime, return the time in seconds since epoch.
+    Given a datetime, return the time in seconds since epoch as an int.
     """
-    return (dt - EPOCH).total_seconds() * 1000.0
+    return int((dt - EPOCH).total_seconds())
+
+
+def get_datetime_from_unix(time: float) -> str:
+    """
+    Given a unix time, convert that time into a datetime string.
+    """
+    return datetime.utcfromtimestamp(time).strftime("%m/%d/%Y, %H:%M:%S")
+
+
+def get_minute_rounded_down(dt: datetime) -> datetime:
+    """
+    Round a datetime down to the nearest minute by setting seconds and microseconds to zero.
+    """
+    return dt.replace(second=0, microsecond=0)
 
 
 def load_sales_data(dt: datetime) -> dict:
     """
     Uses the bandcamp API to return all the sales data from the last 5 minute in json format.
     """
-    seconds = unix_time_millis(dt) - FIVE_MINS_IN_SECONDS
+    minute = get_minute_rounded_down(dt)
+    seconds = unix_time_seconds(minute) - FIVE_MINS_IN_SECONDS
     try:
         response = requests.get(
             f"https://bandcamp.com/api/salesfeed/1/get?start_date={seconds}", timeout=TIMEOUT)
@@ -77,13 +91,6 @@ def get_title_from_url(html: str) -> str:
     return title.text
 
 
-def get_time_from_unix(time: float) -> str:
-    """
-    Given a unix time, convert that time into a datetime string.
-    """
-    return datetime.utcfromtimestamp(time).strftime("%m/%d/%Y, %H:%M:%S")
-
-
 def extract_data_from_json(sales_json: dict) -> list[dict]:
     """
     Given the JSON response from a get request to the Bandcamp API,
@@ -113,7 +120,7 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
                 html = get_html(url)
                 tags = get_tags_from_url(html)
                 title = get_title_from_url(html)
-                time_bought = get_time_from_unix(item["utc_date"])
+                time_bought = get_datetime_from_unix(item["utc_date"])
 
                 entry = {
                     "amount_paid_usd": item["amount_paid_usd"],
