@@ -90,4 +90,10 @@ h3.subtitle{
   font-family: Arial;
   text-decoration: underline;
 }
-tr:hover {background-color: coral;}
+.footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    display: "./bandcamp_logo.jpeg";
+}

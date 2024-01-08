@@ -83,7 +83,7 @@ def load_yesterday_data(db_connection: extensions.connection) -> pd.DataFrame:
         return df
 
 
-def get_key_analytics(data: pd.DataFrame) -> tuple:
+def get_key_analytics(data: pd.DataFrame) -> str:
     """Returns the amount sales and the amount income for the day"""
 
     # amount number of sales
@@ -92,21 +92,51 @@ def get_key_analytics(data: pd.DataFrame) -> tuple:
     # amount income
     amount_income = (data['amount'].sum())/100
 
-    return amount_sales, amount_income
+    html_string = f"""<table class="center">
+            <tr>
+            <th> Total Items Sold</th>
+            <th>Total Income</th>
+            </tr>
+            <tr>
+        <td>{amount_sales}</td>
+            <td>${amount_income}</td>
+        </tr>
+    </table>"""
+
+    return html_string
 
 
-def get_top_5_popular_artists(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe of the top 5 most popular artists for the previous day"""
+def get_top_5_popular_artists(data: pd.DataFrame) -> str:
+    """
+    Returns a html string of a table that contains information on
+    the top 5 most popular artists and how many items they sold
+    """
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     popular_artists = unique_sales['artist'].value_counts().sort_values(ascending=False).head(
         5).reset_index()
 
-    return popular_artists.to_dict('records')
+    artists = popular_artists.to_dict('records')
+
+    html_string = "<table> <tr> <th> Artist </th> <th> Albums/Tracks Sold</th>"
+
+    for artist in artists:
+        html_string += f"""
+        <tr>
+           <td>{artist['artist']}</td>
+           <td>{artist['count']}</td>
+        </tr>>"""
+
+    html_string += "</table>"
+
+    return html_string
 
 
-def get_top_5_grossing_artists(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe of the top 5 selling artists for the previous day"""
+def get_top_5_grossing_artists(data: pd.DataFrame) -> str:
+    """
+    Returns a html string of a table that contains information on
+    the top 5 grossing artists and their total revenue
+    """
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     artist_sales = unique_sales.groupby(
@@ -114,17 +144,27 @@ def get_top_5_grossing_artists(data: pd.DataFrame) -> pd.DataFrame:
     artist_sales = (
         artist_sales/100).sort_values(ascending=False).head(5).reset_index()
 
-    return artist_sales.to_dict('records')
+    artists = artist_sales.to_dict('records')
+
+    html_string = "<table> <tr> <th> Artist </th> <th> Revenue </th>"
+
+    for artist in artists:
+        html_string += f"""
+        <tr>
+           <td>{artist['artist']}</td>
+           <td>${artist['amount']}</td>
+        </tr>>"""
+
+    html_string += "</table>"
+
+    return html_string
 
 
-def remove_duplicate_words(words: list) -> list:
-    """Removes duplicate words in a list"""
-
-    return list(set(words))
-
-
-def get_top_5_sold_albums(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe of the top 5 sold albums which includes the item name, artist, genre and amount"""
+def get_top_5_sold_albums(data: pd.DataFrame) -> str:
+    """
+    Returns a html string of a table that contains information on
+    the top 5 sold albums and how many copies they sold
+    """
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     album_sales = unique_sales.drop(
@@ -132,11 +172,27 @@ def get_top_5_sold_albums(data: pd.DataFrame) -> pd.DataFrame:
     popular_albums = album_sales['item_name'].value_counts().sort_values(ascending=False).head(
         5).reset_index()
 
-    return popular_albums.to_dict('records')
+    albums = popular_albums.to_dict('records')
+
+    html_string = "<table> <tr> <th> Album </th> <th> Copies Sold </th>"
+
+    for album in albums:
+        html_string += f"""
+        <tr>
+           <td>{album['item_name']}</td>
+           <td>{album['count']}</td>
+        </tr>>"""
+
+    html_string += "</table>"
+
+    return html_string
 
 
-def get_top_5_sold_tracks(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe of the top 5 sold items which includes the item name, artist, genre and amount"""
+def get_top_5_sold_tracks(data: pd.DataFrame) -> str:
+    """
+    Returns a html string of a table that contains information on
+    the top 5 sold tracks and how many copies they sold
+    """
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     track_sales = unique_sales.drop(
@@ -144,11 +200,27 @@ def get_top_5_sold_tracks(data: pd.DataFrame) -> pd.DataFrame:
     popular_tracks = track_sales['item_name'].value_counts().sort_values(ascending=False).head(
         5).reset_index()
 
-    return popular_tracks.to_dict('records')
+    tracks = popular_tracks.to_dict('records')
+
+    html_string = "<table> <tr> <th> Tracks </th> <th> Copies Sold </th>"
+
+    for track in tracks:
+        html_string += f"""
+        <tr>
+           <td>{track['item_name']}</td>
+           <td>{track['count']}</td>
+        </tr>>"""
+
+    html_string += "</table>"
+
+    return html_string
 
 
-def get_top_5_grossing_albums(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe of the top 5 albums that are earning the most money"""
+def get_top_5_grossing_albums(data: pd.DataFrame) -> str:
+    """
+    Returns a html string of a table that contains information on
+    the top 5 sold albums and their revenue
+    """
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     album_sales = unique_sales.drop(
@@ -158,11 +230,27 @@ def get_top_5_grossing_albums(data: pd.DataFrame) -> pd.DataFrame:
     album_sales = (
         album_sales/100).sort_values(ascending=False).head(5).reset_index()
 
-    return album_sales.to_dict('records')
+    albums = album_sales.to_dict('records')
+
+    html_string = "<table> <tr> <th> Album </th> <th> Revenue </th>"
+
+    for album in albums:
+        html_string += f"""
+        <tr>
+        <td>{album['item_name']}</td>
+        <td>${album['amount']}</td>
+        </tr>>"""
+
+    html_string += "</table>"
+
+    return html_string
 
 
-def get_top_5_grossing_tracks(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe of the top 5 tracks that are earning the most money"""
+def get_top_5_grossing_tracks(data: pd.DataFrame) -> str:
+    """
+    Returns a html string of a table that contains information on
+    the top 5 sold tracks and their revenue
+    """
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     track_sales = unique_sales.drop(
@@ -172,39 +260,102 @@ def get_top_5_grossing_tracks(data: pd.DataFrame) -> pd.DataFrame:
     track_sales = (
         track_sales/100).sort_values(ascending=False).head(5).reset_index()
 
-    return track_sales.to_dict('records')
+    tracks = track_sales.to_dict('records')
+
+    html_string = "<table> <tr> <th> Tracks </th> <th> Revenue </th>"
+
+    for track in tracks:
+        html_string += f"""
+        <tr>
+        <td>{track['item_name']}</td>
+        <td>${track['amount']}</td>
+        </tr>>"""
+
+    html_string += "</table>"
+
+    return html_string
 
 
-def get_album_genres(data: pd.DataFrame, selected: list[str]) -> pd.DataFrame:
-    """Returns a dataframe of album and its genre if the album is in a specified list of albums"""
+def get_album_genres(data: pd.DataFrame) -> str:
+    """
+    Returns a html string of a table that contains information on
+    the top 5 sold albums and how many copies they sold and their associated genres
+    """
+
+    unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
+
+    album_sales = unique_sales.drop(
+        unique_sales[unique_sales['item_type'] == 'track'].index)
+    popular_albums = album_sales['item_name'].value_counts().sort_values(ascending=False).head(
+        5).reset_index()
+    selected = popular_albums['item_name'].to_list()
 
     album_sales = data[data['item_type'] == 'album']
 
-    filtered_album_sales = album_sales[album_sales['artist'].isin(selected)]
+    filtered_album_sales = album_sales[album_sales['item_name'].isin(selected)]
 
-    albums = filtered_album_sales.groupby(['artist', 'artist'])[
+    albums_genre = filtered_album_sales.groupby(['item_name'])[
         'genre'].agg(list).reset_index()
 
-    albums['genre'] = albums['genre'].apply(
-        remove_duplicate_words)
+    albums_genre['genre'] = albums_genre['genre'].apply(
+        lambda x: list(set(x)))
 
-    return albums
+    final = pd.merge(popular_albums, albums_genre).to_dict('records')
+
+    html_string = "<table> <tr> <th> Album </th> <th> Copies Sold </th> <th> Genres </th>"
+
+    for album in final:
+        html_string += f"""
+        <tr>
+        <td>{album['item_name']}</td>
+        <td>{album['count']}</td>
+        <td>{album['genre'][:3]}</td>
+        </tr>>"""
+
+    html_string += "</table>"
+
+    return html_string
 
 
-def get_track_genres(data: pd.DataFrame, selected: list[str]) -> pd.DataFrame:
-    """Returns a dataframe of the top 5 sold albums which includes the album name, artist, genre and amount"""
+def get_track_genres(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Returns a html string of a table that contains information on
+    the top 5 sold tracks and how many copies they sold and their associated genres
+    """
 
-    track_sales = data[data['item_type'] == 'track']
+    unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
 
-    filtered_track_sales = track_sales[track_sales['artist'].isin(selected)]
+    track_sales = unique_sales.drop(
+        unique_sales[unique_sales['item_type'] == 'album'].index)
+    popular_tracks = track_sales['item_name'].value_counts().sort_values(ascending=False).head(
+        5).reset_index()
+    selected = popular_tracks['item_name'].to_list()
 
-    tracks = filtered_track_sales.groupby(['artist', 'artist'])[
+    track_sales = data[data['item_type'] == 'album']
+
+    filtered_track_sales = track_sales[track_sales['item_name'].isin(selected)]
+
+    track_genre = filtered_track_sales.groupby(['item_name'])[
         'genre'].agg(list).reset_index()
 
-    tracks['genre'] = tracks['genre'].apply(
-        remove_duplicate_words)
+    track_genre['genre'] = track_genre['genre'].apply(
+        lambda x: list(set(x)))
 
-    return tracks
+    final = pd.merge(popular_tracks, track_genre).to_dict('records')
+
+    html_string = "<table> <tr> <th> Track </th> <th> Copies Sold </th> <th> Genres </th>"
+
+    for track in final:
+        html_string += f"""
+        <tr>
+        <td>{track['item_name']}</td>
+        <td>{track['count']}</td>
+        <td>{track['genre'][:3]}</td>
+        </tr>>"""
+
+    html_string += "</table>"
+
+    return html_string
 
 
 def get_popular_genre(data: pd.DataFrame) -> pd.DataFrame:
@@ -212,7 +363,20 @@ def get_popular_genre(data: pd.DataFrame) -> pd.DataFrame:
 
     unique_genre_count = data['genre'].value_counts().head(5).reset_index()
 
-    return unique_genre_count.to_dict('records')
+    genres = unique_genre_count.to_dict('records')
+
+    html_string = "<table> <tr> <th> Genre </th> <th> Copies Sold </th>"
+
+    for genre in genres:
+        html_string += f"""
+        <tr>
+        <td>{genre['genre']}</td>
+        <td>{genre['count']}</td>
+        </tr>>"""
+
+    html_string += "</table>"
+
+    return html_string
 
 
 def get_countries_with_most_sales(data: pd.DataFrame) -> pd.DataFrame:
@@ -233,350 +397,96 @@ def get_popular_artist_per_country(data: pd.DataFrame) -> pd.DataFrame:
     return most_popular_artists
 
 
-def get_number_of_sold_albums_and_tracks(data: pd.DataFrame) -> tuple:
-    """Returns a dataframe that shows the number of albums and tracks sold"""
-
-    albums_sold = data[data['item_type'] == 'album'].value_counts()
-    tracks_sold = data[data['item_type'] == 'tracks'].value_counts()
-
-    return albums_sold, tracks_sold
-
-
 def generate_html_string(data: pd.DataFrame) -> str:
     """Returns a html string that contains all the daily report anlayses"""
 
-    # key_metrics = get_key_analytics(data)
-    # top_5_popular_artists = get_top_5_popular_artists(data)
-    # top_5_grossing_artists = get_top_5_grossing_artists(data)
-    # top_5_albums = get_top_5_sold_albums(data)
-    # top_5_tracks = get_top_5_sold_tracks(data)
-    # top_5_grossing_albums = get_top_5_grossing_albums(data)
-    # top_5_grossing_tracks = get_top_5_grossing_tracks(data)
-    # # top_5_albums_list = top_5_albums['artist'].tolist()
-    # # top_5_tracks_list = top_5_tracks['artist'].tolist()
-    # # album_genres = get_album_genres(data, top_5_albums_list)
-    # # track_genres = get_track_genres(data, top_5_tracks_list)
-    # top_genres = get_popular_genre(data)
-    # sales_per_country = get_countries_with_most_sales(data)
-    # artists_per_country = get_popular_artist_per_country(data)
-
-    html_string = """
+    html_string = f"""
     <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=210mm, height=297mm", inital-scale=1.0">
-    <link rel="stylesheet" href="static/style.css">
-    </head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=210mm, height=297mm", inital-scale=1.0">
+        <link rel="stylesheet" href="static/style.css">
+        </head>
     <body>
-    <div>
-    <img class=title src="./bandcamp_logo.jpeg">
-    <h1 class=title> Bandcamp Report </h1>
-    <h1 class=date> 03-01-24 </h1>
-    </div>
-    <div class=new-page>
-    <h2 class=header> Overview </h2>
-    <p> This is a daily report that contains the key analyses for <a href="https://bandcamp.com/">Bandcamp</a> data from 03-01-24.
-    <br> The Bandcamp Tracker Report offers a detailed exploration of sales data, providing valuable insights into the music industry's dynamics. By analysing data from 03-01-24, the report aims to offer a snapshot of trends and patterns in music purchases as well as trending genres and regional data.</p>
-    <h2 class=header> Contents </h2>
-    <p class=contents>
-    <br> Key Metrics.......3 </br>
-    <br> Top Performers.......3 </br>
-    <br> Sales Overview.......4 </br>
-    <br> Genre Analysis.......5 </br>
-    <br> Regional Analysis.......6 </br> </p>
-    </div>
-    <div class="new-page">
-    <h2 class="header"> Key Metrics </h2>
-    <p> This section delves into essential metrics that gauge the overall performance of the music marketplace on Bandcamp. It includes the total number of sales, indicating the volume of transaction and the total income generated, offering a finiancial perspective. </p>
-    <table class="center">
-        <tr>
-        <th> Total Items Sold</th>
-        <th>Total Income</th>
-        </tr>
-        <tr>
-        <td>{key_metrics[0]}</td>
-            <td>${key_metrics[1]}</td>
-        </tr>
-    </table>
-    <h2 class="header"> Top Performers </h2>
-  <p> Discover the artists who stand out as top performers in the sales landscape. The report identifies the top 5 popular artists, showcasing those who have garnered the most attention, and the top 5 grossing artists, highlighting those who have achieved the highest revenue through their music.
-    <div class="row">
-    <div class="column">
-  <table>
-    <tr>
-        <th> Artist </th>
-        <th> Albums/Tracks Sold</th>
-    </tr>
-    <tr>
-       <td>{top_5_popular_artists[0]['artist']}</td>
-       <td>{top_5_popular_artists[0]['count']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_popular_artists[1]['artist']}</td>
-       <td>{top_5_popular_artists[1]['count']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_popular_artists[2]['artist']}</td>
-       <td>{top_5_popular_artists[2]['count']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_popular_artists[3]['artist']}</td>
-       <td>{top_5_popular_artists[3]['count']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_popular_artists[4]['artist']}</td>
-       <td>{top_5_popular_artists[4]['count']}</td>
-    </tr>
-  </table>
-</div>
-<div class="column">
-  <table>
-    <tr>
-        <th> Artist </th>
-        <th> Revenue </th>
-    </tr>
-    <tr>
-       <td>{top_5_grossing_artists[0]['artist']}</td>
-       <td>${top_5_grossing_artists[0]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_grossing_artists[1]['artist']}</td>
-       <td>${top_5_grossing_artists[1]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_grossing_artists[2]['artist']}</td>
-       <td>${top_5_grossing_artists[2]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_grossing_artists[3]['artist']}</td>
-       <td>${top_5_grossing_artists[3]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_grossing_artists[4]['artist']}</td>
-       <td>${top_5_grossing_artists[4]['amount']}</td>
-    </tr>
-  </table>
-</div>
-</div>
-</div>
-<div class="new-page">
-<h2 class="header"> Sales Overview </h2>
-<p> Explore the top 5 albums and tracks, shedding light on the current preferences of Bandcamp users. This section provides an overview of the most popular music items, giving insights into customer choices and potential trends. <p>
-<h3 class="subtitle"> Albums </h3>
- <div class="row">
-    <div class="column">
-  <table>
-    <tr>
-        <th> Album </th>
-        <th> Copies Sold </th>
-    </tr>
-    <tr>
-       <td>{top_5_albums[0]['item_name']}</td>
-       <td>{top_5_albums[0]['count']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_albums[1]['item_name']}</td>
-       <td>{top_5_albums[1]['count']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_albums[2]['item_name']}</td>
-       <td>{top_5_albums[2][counte']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_albums[3]['item_name']}</td>
-       <td>{top_5_albums[3]['count']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_albums[4]['item_name']}</td>
-       <td>{top_5_albums[4]['count']}</td>
-    </tr>
-  </table>
-</div>
-<div class="column">
-  <table>
-    <tr>
-        <th> Album </th>
-        <th> Revenue </th>
-    </tr>
-    <tr>
-       <td>{top_5_albums[0]['item_name']}</td>
-       <td>${top_5_albums[0]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_albums[0]['item_name']}</td>
-       <td>${top_5_albums[0]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_albums[0]['item_name']}</td>
-       <td>${top_5_albums[0]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_albums[0]['item_name']}</td>
-       <td>${top_5_albums[0]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_albums[0]['item_name']}</td>
-       <td>${top_5_albums[0]['amount']}</td>
-    </tr>
-  </table>
-</div>
-</div>
-<h3 class="subtitle"> Tracks </h3>
- <div class="row">
-    <div class="column">
-  <table>
-    <tr>
-        <th> Track </th>
-        <th> Copies Sold </th>
-    </tr>
-    <tr>
-       <td>{top_5_tracks[0]['item_name']}</td>
-       <td>{top_5_tracks[0]['count']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_tracks[1]['item_name']}</td>
-       <td>{top_5_tracks[1]['count']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_tracks[2]['item_name']}</td>
-       <td>{top_5_tracks[2]['count']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_tracks[3]['item_name']}</td>
-       <td>{top_5_tracks[3]['count']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_tracks[4]['item_name']}</td>
-       <td>{top_5_tracks[4]['count']}</td>
-    </tr>
-  </table>
-</div>
-<div class="column">
-  <table>
-    <tr>
-        <th> Tracks </th>
-        <th> Revenue </th>
-    </tr>
-    <tr>
-       <td>{top_5_tracks[0]['item_name']}</td>
-       <td>${top_5_tracks[0]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_tracks[0]['item_name']}</td>
-       <td>${top_5_tracks[0]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_tracks[0]['item_name']}</td>
-       <td>${top_5_tracks[0]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_tracks[0]['item_name']}</td>
-       <td>${top_5_tracks[0]['amount']}</td>
-    </tr>
-     <tr>
-       <td>{top_5_tracks[0]['item_name']}</td>
-       <td>${top_5_tracks[0]['amount']}</td>
-    </tr>
-  </table>
-</div>
-</div>
-</div>
-<div class="new-page">
-<h2 class="header"> Genre Analysis </h2>
-<p> Dive into the diverse world of music genres with detailed analysis. The report outlines the top 5 genres overall, the genres associated with the top 5 albums, and the genres of the top 5 tracks. This analysis aims to uncover patterns in genre preferences and potential areas for genre-specific marketing strategies. <p>
- <table class="center">
-        <tr>
-        <th> Genre </th>
-        <th>Copies Sold</th>
-        </tr>
-        <tr>
-        <td>{top_genres[0]['genre']}</td>
-        <td>{key_metrics[1]}</td>
-        </tr>
-        <tr>
-        <td>{top_genres[1]['genre']}</td>
-            <td>{key_metrics[1]}</td>
-        </tr>
-        <tr>
-        <td>{top_genres[2]['genre']}</td>
-            <td>{key_metrics[1]}</td>
-        </tr>
-        <tr>
-        <td>{top_genres[3]['genre']}</td>
-            <td>{key_metrics[1]}</td>
-        </tr>
-        <tr>
-        <td>{top_genres[4]['genre']}</td>
-            <td>{key_metrics[1]}</td>
-        </tr>
-    </table>
- <table class="center">
-        <tr>
-        <th> Album </th>
-        <th>Copies Sold</th>
-        <th>Genre</th>
-        </tr>
-        <tr>
-        <td>album 0</td>
-        <td>sold 0</td>
-        <td>genres 0</td>
-        </tr>
-        <tr>
-        <td>album 1</td>
-        <td>sold 1</td>
-        <td>genres 1</td>
-        </tr>
-        <tr>
-        <td>album 2</td>
-        <td>sold 2</td>
-        <td>genres 2</td>
-        </tr>
-        <tr>
-        <td>album 3</td>
-        <td>sold 3</td>
-        <td>genres 3</td>
-        </tr>
-        <tr>
-        <td>album 4</td>
-        <td>sold 4</td>
-        <td>genres 4</td>
-        </tr>
-    </table>
- <table class="center">
-        <tr>
-        <th> Tracks </th>
-        <th>Copies Sold</th>
-        <th>Genre</th>
-        </tr>
-        <tr>
-        <td>Track 0</td>
-        <td>sold 0</td>
-        <td>genres 0</td>
-        </tr>
-        <tr>
-        <td>Track 1</td>
-        <td>sold 1</td>
-        <td>genres 1</td>
-        </tr>
-        <tr>
-        <td>Track 2</td>
-        <td>sold 2</td>
-        <td>genres 2</td>
-        </tr>
-        <tr>
-        <td>Track 3</td>
-        <td>sold 3</td>
-        <td>genres 3</td>
-        </tr>
-        <tr>
-        <td>Track 4</td>
-        <td>sold 4</td>
-        <td>genres 4</td>
-        </tr>
-    </table>
-    </div>
-    <div class="new-page">
-    <h2 class="header"> Regional Insights </h2>
-    <p> Understand how music sales vary across different regions. Highlighting countries with the most sales provides valuable geographical insights. Additionally, identifying the most popular artists in each country offers a nuanced view of regional music preferences <p>
+        <div>
+            <img class=title src="./bandcamp_logo.jpeg">
+            <h1 class=title> Bandcamp Report </h1>
+            <h1 class=date> 03-01-24 </h1>
+        </div>
+        <div class="new-page", class="footer">
+            <h2 class=header> Overview </h2>
+            <p> This is a daily report that contains the key analyses for <a href="https://bandcamp.com/">Bandcamp</a> data from 03-01-24.
+                <br> The Bandcamp Tracker Report offers a detailed exploration of sales data, providing valuable insights into the music industry's dynamics.
+                    By analysing data from 03-01-24, the report aims to offer a snapshot of trends and patterns in music purchases as well as trending genres and regional data
+            </p>
+            <h2 class=header> Contents </h2>
+            <p class=contents>
+                <br> Key Metrics </br>
+                <br> Top Performers </br>
+                <br> Sales Overview </br>
+                <br> Genre Analysis </br>
+                <br> Regional Analysis </br>
+            </p>
+        </div>
+        <div class="new-page" class="footer">
+            <h2 class="header"> Key Metrics </h2>
+            <p> This section delves into essential metrics that gauge the overall performance of the music marketplace on Bandcamp.
+            It includes the total number of sales, indicating the volume of transaction and the total income generated, offering a financial perspective.
+            </p>
+            {get_key_analytics(data)}
+            <h2 class="header"> Top Performers </h2>
+            <p> Discover the artists who stand out as top performers in the sales landscape.
+                The report identifies the top 5 popular artists, showcasing those who have garnered the most attention, and the top 5 grossing artists,
+                highlighting those who have achieved the highest revenue through their music.
+            </p>
+            <div class="row">
+                <div class="column">
+                    {get_top_5_popular_artists(data)}
+                </div>
+                <div class="column">
+                    {get_top_5_grossing_artists(data)}
+                </div>
+            </div>
+        </div>
+        <div class="new-page" class="footer">
+            <h2 class="header"> Sales Overview </h2>
+            <p> Explore the top 5 albums and tracks, shedding light on the current preferences of Bandcamp users.
+                This section provides an overview of the most popular music items, giving insights into customer choices and potential trends.
+            </p>
+            <h3 class="subtitle"> Albums </h3>
+            <div class="row">
+                <div class="column">
+                    {get_top_5_sold_albums(data)}
+                </div>
+                <div class="column">
+                    {get_top_5_grossing_albums(data)}
+                </div>
+            </div>
+            <h3 class="subtitle"> Tracks </h3>
+            <div class="row">
+                <div class="column">
+                    {get_top_5_sold_tracks(data)}
+                </div>
+                <div class="column">
+                    {get_top_5_grossing_tracks(data)}
+                </div>
+            </div>
+        </div>
+        <div class="new-page" class="footer">
+            <h2 class="header"> Genre Analysis </h2>
+            <p> Dive into the diverse world of music genres with detailed analysis.
+                The report outlines the top 5 genres overall, the genres associated with the top 5 albums, and the genres of the top 5 tracks.
+                This analysis aims to uncover patterns in genre preferences and potential areas for genre-specific marketing strategies.
+            </p>
+            {get_popular_genre(data)}
+            {get_album_genres(data)}
+            {get_track_genres(data)}
+        </div>
+        <div class="new-page" class="footer">
+            <h2 class="header"> Regional Insights </h2>
+            <p> Understand how music sales vary across different regions.
+                Highlighting countries with the most sales provides valuable geographical insights.
+                Additionally, identifying the most popular artists in each country offers a nuanced view of regional music preferences.
+            </p>
     <table class="center">
         <tr>
         <th> Country </th>
@@ -585,11 +495,15 @@ def generate_html_string(data: pd.DataFrame) -> str:
         </tr>
     </table>
     </div>
-"""
+    """
     return html_string
 
 
 def convert_html_to_pdf(source_html, output_filename):
+    """
+    Converts a html string which is taken as an argument into
+    a pdf.
+    """
     # open output file for writing (truncated binary)
     result_file = open(output_filename, "w+b")
 
@@ -611,6 +525,7 @@ def generate_pdf_report(data: pd.DataFrame):
     html_string = generate_html_string(data)
     convert_html_to_pdf(html_string, 'Bancamp-Daily-Report.pdf')
 
+
 # def handler(event=None, context=None) -> dict:
 #     """Handler for the lambda function"""
 
@@ -630,16 +545,17 @@ if __name__ == "__main__":
     connection = get_db_connection()
 
     all_data = load_all_data(connection)
-    top_5_albums = get_top_5_sold_albums(all_data)
-    top_5_tracks = get_top_5_sold_tracks(all_data)
-    top_5_grossing_albums = get_top_5_grossing_albums(all_data)
-    top_5_grossing_tracks = get_top_5_grossing_tracks(all_data)
+    # top_5_albums = get_top_5_sold_albums(all_data)
+    # top_5_tracks = get_top_5_sold_tracks(all_data)
+    # top_5_grossing_albums = get_top_5_grossing_albums(all_data)
+    # top_5_grossing_tracks = get_top_5_grossing_tracks(all_data)
     # top_5_albums_list = top_5_albums['item_name'].tolist()
     # top_5_tracks_list = top_5_tracks['item_name'].tolist()
     # album_genres = get_album_genres(all_data, top_5_albums_list)
     # track_genres = get_track_genres(all_data, top_5_tracks_list)
 
-    print(all_data)
+    # print(all_data)
+    # print(get_album_genres(all_data))
 
     html_report = generate_html_string(all_data)
 
