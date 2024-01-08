@@ -1,0 +1,8 @@
+python-dotenv
+pylint
+pytest
+psycopg2
+pandas
+ipykernel
+kaleido
+xhtml2pdf
