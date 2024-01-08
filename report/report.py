@@ -425,13 +425,13 @@ def generate_html_string(data: pd.DataFrame) -> str:
         <div>
             <img class=title src="./bandcamp_logo.jpeg">
             <h1 class=title> Bandcamp Report </h1>
-            <h1 class=date> 03-01-24 </h1>
+            <h1 class=date> {YESTERDAY_DATE} </h1>
         </div>
         <div class="new-page", class="footer">
             <h2 class=header> Overview </h2>
-            <p> This is a daily report that contains the key analyses for <a href="https://bandcamp.com/">Bandcamp</a> data from 03-01-24.
+            <p> This is a daily report that contains the key analyses for <a href="https://bandcamp.com/">Bandcamp</a> data from {YESTERDAY_DATE}.
                 <br> The Bandcamp Tracker Report offers a detailed exploration of sales data, providing valuable insights into the music industry's dynamics.
-                    By analysing data from 03-01-24, the report aims to offer a snapshot of trends and patterns in music purchases as well as trending genres and regional data
+                    By analysing data from {YESTERDAY_DATE}, the report aims to offer a snapshot of trends and patterns in music purchases as well as trending genres and regional data
             </p>
             <h2 class=header> Contents </h2>
             <p class=contents>
