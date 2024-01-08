@@ -92,7 +92,7 @@ def clean_titles(name: str) -> str:
     return name.strip()
 
 
-def clean_dataframe(dataframe: pd.DataFrame, sales_event: bool) -> pd.DataFrame:
+def clean_dataframe(dataframe: pd.DataFrame) -> tuple:
     """
     Cleans the tags, the title, the amount paid for the album / track
     and the artist.
@@ -108,11 +108,6 @@ def clean_dataframe(dataframe: pd.DataFrame, sales_event: bool) -> pd.DataFrame:
 
     dataframe = dataframe.dropna()
 
-    if sales_event:
-        dataframe['amount_paid_usd'] = dataframe['amount_paid_usd'] / 100
-        dataframe['amount_paid_usd'] = dataframe['amount_paid_usd'].astype(int)
-        return dataframe
+    exploded_dataframe = dataframe.explode('tags')
 
-    dataframe = dataframe.explode('tags')
-
-    return dataframe
+    return (exploded_dataframe, dataframe)
