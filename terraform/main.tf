@@ -51,7 +51,7 @@ resource "aws_db_instance" "bandcamp_db" {
 }
 
 
-# Create Pipeline Task Defination
+# Create Pipeline Task Definition
 
 resource "aws_ecs_task_definition" "bandcamp_pipeline_taskdef" {
   family = "c9-bandcamp-pipeline-td"
@@ -98,6 +98,59 @@ resource "aws_ecs_task_definition" "bandcamp_pipeline_taskdef" {
   memory=2048
   cpu = 1024
   execution_role_arn = data.aws_iam_role.execution-role.arn
+}
+
+# Create Dashboard Task Definition
+
+resource "aws_ecs_task_definition" "bandcamp_dashboard_taskdef" {
+    family = "c9-bandcamp-dashboard-td"
+    requires_compatibilities = ["FARGATE"]
+    network_mode = "awsvpc"
+    container_definitions = jsonencode([
+    {
+        "name": "bandcamp-dashboard-td",
+        "image": "",
+        "essential": true,
+        "environment": [
+            {
+                "name": "DB_IP",
+                "value": var.DB_IP
+            },
+            {
+                "name": "DB_USER",
+                "value": var.DB_USER
+            },
+            {
+                "name": "DB_PASSWORD",
+                "value": var.DB_PASSWORD
+            },
+            {
+                "name": "DB_NAME",
+                "value": var.DB_NAME
+            },
+            {
+                "name": "DB_PORT",
+                "value": var.DB_PORT
+            }
+        ],
+        "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "/ecs/c9-bandcamp-bandcamp-td"
+                "awslogs-region": "eu-west-2"
+                "awslogs-stream-prefix": "ecs"
+                "awslogs-create-group" : "true"
+            }
+        }
+    }
+])
+}
+
+# Create Dashboard ECS Service 
+
+resource "aws_ecs_service" "bandcamp_dashboard_service" {
+    name = "bandcamp_dashboard_service"
+    task_definition = aws_ecs_task_definition.bandcamp_dashboard_taskdef.arn
 }
 
 # Create Role for Event Schedule
