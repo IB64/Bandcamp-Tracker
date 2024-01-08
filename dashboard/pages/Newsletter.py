@@ -21,62 +21,51 @@ def subscribe_email_to_sns(email):
 
 
 def main():
-    """Main function to create the newsletter page on the dashboard."""
-    st.set_page_config(
-        layout="wide", page_title="BandCamp Analysis", page_icon="🎵")
-
+    """Main function to create the Newsletter page description."""
     st.write("# Newsletter Email")
 
     with st.container(border=True):
+        st.markdown(
+            """
+        Our Daily Music Insights Newsletter delivers a curated experience straight to your inbox, 
+        providing you with a recap of the previous day's music scene, 
+        exclusive insights into top artists, genres, and albums, 
+        and a glimpse into regional music trends.
+        ## Why Subscribe?
+        - **Daily Highlights:**
+            Receive a daily dose of music by staying up to date with sales from the previous day.
 
-        st.markdown("""<div style='padding: 4px; font-size: 18px'>
-                    Our Daily Music Insights Newsletter delivers a curated experience straight to your inbox, 
-                    providing you with a recap of the previous day's music scene, 
-                    exclusive insights into top artists, genres, and albums, 
-                    and a glimpse into regional music trends.</div>""",
-                    unsafe_allow_html=True)
+        - **Detailed Top Chart Data:**
+            Discover who's taking the music scene by storm. 
+            Our newsletter showcases insights into the top-performing artists and trending genres, 
+            helping you explore new sounds and talents.
 
-        st.markdown("""<div style='padding: 4px; font-weight: bold; font-size: 30px'>
-                        Why Subscribe?</div"">""",
-                    unsafe_allow_html=True)
+        - **Regional Data:**
+            Explore how music trends vary across the globe and broaden your musical horizons.
 
-        st.markdown("""<ul style='padding: 4px;'>
-                    <li style='font-size: 20px; font-weight: bold;'>Daily Highlights
-                        <div style='font-size: 16px; font-weight: lighter;'>
-                        Receive a daily dose of music by staying up to date with sales from the previous day.</div>
-                    </li>
-                    <li style='font-size: 20px; font-weight: bold;'>Detailed Top Chart data 
-                        <div style='font-size: 16px; font-weight: lighter;'>
-                        Discover who's taking the music scene by storm. Our newsletter showcases insights into the top-performing artists and trending genres, helping you explore new sounds and talents.</div>
-                    </li>
-                    <li style='font-size: 20px; font-weight: bold;'>Regional Data
-                        <div style='font-size: 16px; font-weight: lighter;'>
-                        Explore how music trends vary across the globe and broaden your musical horizons.</div>
-                    </li>
-                        </ul>""",
-                    unsafe_allow_html=True)
+        **To start receiving your daily music insights,** 
+        simply enter your email address to subscribe below:
+        """)
 
-        st.markdown("""<div style='padding: 4px; font-size: 18px'>
-                    To start receiving your daily music insights, 
-                    simply enter your email address to subscribe below:</div>""",
-                    unsafe_allow_html=True)
-        st.write(" ")
-        user_email = st.text_input('Enter email address: ')
+        st.text_input('Enter email address: ', key='user_email')
 
         EMAIL = r'^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$'
 
-        if user_email == '':
-            pass
-        elif not re.match(EMAIL, user_email):
-            st.write('Not a valid Email')
-        else:
-            subscribe_email_to_sns(user_email)
-            st.markdown(
-                """<div style='padding: 4px; font-size: 16px'>
-                   Email has been subscribed! 
-                   Please confirm your email address by clicking 'Confirm Subscription' 
-                   in your most recent email from AWS Notifications.</div>""",
-                unsafe_allow_html=True)
+        if st.button('Subscribe'):
+            user_email = st.session_state.user_email
+            if user_email == '':
+                pass
+            elif not re.match(EMAIL, user_email):
+                st.write('Not a valid Email')
+            else:
+                subscribe_email_to_sns(user_email)
+                st.markdown(
+                    """
+                    **Email has been subscribed!**
+                    Please confirm your email address by clicking 'Confirm Subscription' 
+                    in your most recent email from AWS Notifications.
+                    """
+                )
 
 
 if __name__ == "__main__":
