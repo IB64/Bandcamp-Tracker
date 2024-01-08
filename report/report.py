@@ -405,7 +405,7 @@ def get_countries_insights(data: pd.DataFrame) -> pd.DataFrame:
         <td>{country['country']}</td>
         <td>{country['count']}</td>
         <td>{country['artist']}</td>
-        </tr>>"""
+        </tr>"""
 
     html_string += "</table>"
 
