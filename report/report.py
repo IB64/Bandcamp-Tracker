@@ -22,6 +22,7 @@ def get_db_connection() -> extensions.connection:
                        database=environ["DB_NAME"])
     except ConnectionError:
         print("Error: Cannot connect to the database")
+        return None
 
 
 def load_all_data(db_connection: extensions.connection) -> pd.DataFrame:
@@ -359,7 +360,10 @@ def get_track_genres(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_popular_genre(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe of the top 5 genres"""
+    """
+    Returns a html string of a table that contains information on
+    the top 5 genres and how many copies a genre has sold
+    """
 
     unique_genre_count = data['genre'].value_counts().head(5).reset_index()
 
@@ -380,7 +384,10 @@ def get_popular_genre(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_countries_insights(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe that shows how many sales are happening in each country."""
+    """
+    Returns a html string of a table that contains information on
+    how many sales have occurred in every country and who the countries top artist is
+    """
 
     country_sales = data['country'].value_counts(
     ).sort_values(ascending=False).reset_index()
@@ -503,8 +510,7 @@ def generate_html_string(data: pd.DataFrame) -> str:
 
 def convert_html_to_pdf(source_html, output_filename):
     """
-    Converts a html string which is taken as an argument into
-    a pdf.
+    Converts a html string into a pdf.
     """
     # open output file for writing (truncated binary)
     result_file = open(output_filename, "w+b")
