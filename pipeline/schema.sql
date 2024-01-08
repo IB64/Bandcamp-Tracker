@@ -64,3 +64,7 @@ CREATE TABLE sale_event(
     FOREIGN KEY (item_id) REFERENCES item(item_id),
     FOREIGN KEY (country_id) REFERENCES country(country_id)
 );
+
+INSERT INTO item_type(item_type) VALUES
+    ('album'),
+    ('track');
