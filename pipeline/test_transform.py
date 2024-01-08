@@ -66,13 +66,18 @@ class TestTransform:
                 "artist": ["Artist1 ft. Artist2", "Artist2"]}
         df = pd.DataFrame(data)
 
-        cleaned_df = clean_dataframe(df, False)
+        exploded_cleaned_df, cleaned_df = clean_dataframe(df)
 
         assert "tags" in cleaned_df.columns
+        assert "tags" in exploded_cleaned_df.columns
         assert "title" in cleaned_df.columns
+        assert "title" in exploded_cleaned_df.columns
         assert "amount_paid_usd" in cleaned_df.columns
+        assert "amount_paid_usd" in exploded_cleaned_df.columns
         assert "artist" in cleaned_df.columns
+        assert "artist" in exploded_cleaned_df.columns
         assert cleaned_df["amount_paid_usd"].dtype == "int64"
+        assert exploded_cleaned_df["amount_paid_usd"].dtype == "int64"
 
     def test_special_characters(self):
         """
@@ -128,13 +133,49 @@ class TestTransformErrors:
         df = pd.DataFrame(data)
 
         wanted_data = {
+            "tags": [["Rock"], ["Jazz"], ["Soul"]],
+            "title": ["Song1", "Song2", "Song3"],
+            "amount_paid_usd": [1000, 2000, 3000],
+            "artist": ["Artist1", "Artist2", "Artist3"]
+        }
+
+        wanted_exploded_data = {
             "tags": ["Rock", "Jazz", "Soul"],
             "title": ["Song1", "Song2", "Song3"],
             "amount_paid_usd": [1000, 2000, 3000],
             "artist": ["Artist1", "Artist2", "Artist3"]
         }
 
-        cleaned_df = clean_dataframe(df, False)
+        exploded_cleaned_df, cleaned_df = clean_dataframe(df)
         wanted_result = pd.DataFrame(wanted_data)
+        wanted_exploded_result = pd.DataFrame(wanted_exploded_data)
 
         assert cleaned_df.equals(wanted_result) is True
+        assert exploded_cleaned_df.equals(wanted_exploded_result) is True
+
+        data = {"tags": [["electro"], ["mood", "jazz"], ["soul"]],
+                "title": ["Song1", "漢字", "Song3"],
+                "amount_paid_usd": [10, 20, 30],
+                "artist": ["Artist1 ft. Artist2", "Artist2", "漢字"]}
+        df = pd.DataFrame(data)
+
+        wanted_data = {
+            "tags": [["Electro"]],
+            "title": ["Song1"],
+            "amount_paid_usd": [1000],
+            "artist": ["Artist1"]
+        }
+
+        wanted_exploded_data = {
+            "tags": ["Electro"],
+            "title": ["Song1"],
+            "amount_paid_usd": [1000],
+            "artist": ["Artist1"]
+        }
+
+        exploded_cleaned_df, cleaned_df = clean_dataframe(df)
+        wanted_result = pd.DataFrame(wanted_data)
+        wanted_exploded_result = pd.DataFrame(wanted_exploded_data)
+
+        assert cleaned_df.equals(wanted_result) is True
+        assert exploded_cleaned_df.equals(wanted_exploded_result) is True
