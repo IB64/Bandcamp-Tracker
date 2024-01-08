@@ -1,15 +1,20 @@
-"""Script to interact with the Bandcamp API and extract relevant information"""
+"""
+Script to interact with the Bandcamp API and extract relevant information
+"""
 from datetime import datetime
-from urllib.request import urlopen
 from time import perf_counter
+from urllib.request import urlopen
 
-import requests
 from bs4 import BeautifulSoup
+import pandas as pd
+import requests
+from requests.exceptions import Timeout, HTTPError
 
 EPOCH = datetime.utcfromtimestamp(0)
 TIMEOUT = 20
 ALBUM = "a"
 TRACK = "t"
+FIVE_MINS_IN_SECONDS = 300
 
 
 def unix_time_millis(dt: datetime) -> float:
@@ -21,11 +26,18 @@ def unix_time_millis(dt: datetime) -> float:
 
 def load_sales_data(dt: datetime) -> dict:
     """
-    Uses the bandcamp API to return all the sales data from the last minute in json format.
+    Uses the bandcamp API to return all the sales data from the last 5 minute in json format.
     """
-    seconds = unix_time_millis(dt) - 60
-    response = requests.get(
-        f"https://bandcamp.com/api/salesfeed/1/get?start_date={seconds}", timeout=TIMEOUT)
+    seconds = unix_time_millis(dt) - FIVE_MINS_IN_SECONDS
+    try:
+        response = requests.get(
+            f"https://bandcamp.com/api/salesfeed/1/get?start_date={seconds}", timeout=TIMEOUT)
+    except ConnectionError as exc:
+        raise ConnectionError("Connection failed") from exc
+    except Timeout as exc:
+        raise Timeout("The request timed out.") from exc
+    except HTTPError as exc:
+        raise HTTPError("url is invalid.") from exc
 
     return response.json()
 
@@ -65,11 +77,17 @@ def get_title_from_url(html: str) -> str:
     return title.text
 
 
+def get_time_from_unix(time: float) -> str:
+    """
+    Given a unix time, convert that time into a datetime string.
+    """
+    return datetime.utcfromtimestamp(time).strftime("%m/%d/%Y, %H:%M:%S")
+
+
 def extract_data_from_json(sales_json: dict) -> list[dict]:
     """
     Given the JSON response from a get request to the Bandcamp API,
-    return a list of dictionaries with each dictionary containing
-    wanted information for each sale.
+    return a list of dicts with wanted information for each sale.
     """
     data = []
 
@@ -78,9 +96,16 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
         if event["event_type"] == "sale":
             items = event["items"]
             for item in items:
-                if item["item_type"] not in (ALBUM, TRACK):
+                # determine item type. Skip if not an album or track
+                item_type = item["item_type"]
+                if item_type not in (ALBUM, TRACK):
                     continue
+                if item_type == ALBUM:
+                    item_type = "album"
+                elif item_type == TRACK:
+                    item_type = "track"
 
+                # append "https:" to urls that don't have it
                 url = item["url"]
                 if "https:" not in url:
                     url = "https:" + url
@@ -88,6 +113,7 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
                 html = get_html(url)
                 tags = get_tags_from_url(html)
                 title = get_title_from_url(html)
+                time_bought = get_time_from_unix(item["utc_date"])
 
                 entry = {
                     "amount_paid_usd": item["amount_paid_usd"],
@@ -95,7 +121,9 @@ def extract_data_from_json(sales_json: dict) -> list[dict]:
                     "country": item["country"],
                     "title": title,
                     "artist": item["artist_name"],
-                    "at": datetime.utcfromtimestamp(item["utc_date"])
+                    "at": time_bought,
+                    "type": item_type,
+                    "image": item["art_url"]
                 }
                 data.append(entry)
 

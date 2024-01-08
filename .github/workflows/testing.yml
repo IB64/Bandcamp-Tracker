@@ -23,22 +23,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pylint
+          pip install pytest
           REQUIREMENTS_FILES=$(find . -name "requirements.txt")
           for file in $REQUIREMENTS_FILES; do
             directory=$(dirname $file)
             pip install -r $file
           done
 
-      - name: Find test files
-        id: find-test-files
-        run: echo "::set-output name=test_files::$(find . -type f -name 'test_*.py' -not -path './.git/*')"
-
-      - name: Loop over test files and run tests
+      - name: Run pytest
         run: |
-          for test_file in ${{ steps.find-test-files.outputs.test_files }}; do
-            dir=$(dirname $test_file)
-            cd $dir
-            pytest $test_file
-            cd -
-          done
+          pytest -v -s $(find . -name "*_test.py")
