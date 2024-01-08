@@ -118,14 +118,14 @@ def get_top_5_popular_artists(data: pd.DataFrame) -> str:
 
     artists = popular_artists.to_dict('records')
 
-    html_string = "<table> <tr> <th> Artist </th> <th> Albums/Tracks Sold</th>"
+    html_string = "<table><tr><th> Artist </th><th> Albums/Tracks Sold</th>"
 
     for artist in artists:
         html_string += f"""
         <tr>
            <td>{artist['artist']}</td>
            <td>{artist['count']}</td>
-        </tr>>"""
+        </tr>"""
 
     html_string += "</table>"
 
@@ -153,7 +153,7 @@ def get_top_5_grossing_artists(data: pd.DataFrame) -> str:
         <tr>
            <td>{artist['artist']}</td>
            <td>${artist['amount']}</td>
-        </tr>>"""
+        </tr>"""
 
     html_string += "</table>"
 
@@ -181,7 +181,7 @@ def get_top_5_sold_albums(data: pd.DataFrame) -> str:
         <tr>
            <td>{album['item_name']}</td>
            <td>{album['count']}</td>
-        </tr>>"""
+        </tr>"""
 
     html_string += "</table>"
 
@@ -209,7 +209,7 @@ def get_top_5_sold_tracks(data: pd.DataFrame) -> str:
         <tr>
            <td>{track['item_name']}</td>
            <td>{track['count']}</td>
-        </tr>>"""
+        </tr>"""
 
     html_string += "</table>"
 
@@ -239,7 +239,7 @@ def get_top_5_grossing_albums(data: pd.DataFrame) -> str:
         <tr>
         <td>{album['item_name']}</td>
         <td>${album['amount']}</td>
-        </tr>>"""
+        </tr>"""
 
     html_string += "</table>"
 
@@ -269,7 +269,7 @@ def get_top_5_grossing_tracks(data: pd.DataFrame) -> str:
         <tr>
         <td>{track['item_name']}</td>
         <td>${track['amount']}</td>
-        </tr>>"""
+        </tr>"""
 
     html_string += "</table>"
 
@@ -310,7 +310,7 @@ def get_album_genres(data: pd.DataFrame) -> str:
         <td>{album['item_name']}</td>
         <td>{album['count']}</td>
         <td>{album['genre'][:3]}</td>
-        </tr>>"""
+        </tr>"""
 
     html_string += "</table>"
 
@@ -331,7 +331,7 @@ def get_track_genres(data: pd.DataFrame) -> pd.DataFrame:
         5).reset_index()
     selected = popular_tracks['item_name'].to_list()
 
-    track_sales = data[data['item_type'] == 'album']
+    track_sales = data[data['item_type'] == 'track']
 
     filtered_track_sales = track_sales[track_sales['item_name'].isin(selected)]
 
@@ -351,7 +351,7 @@ def get_track_genres(data: pd.DataFrame) -> pd.DataFrame:
         <td>{track['item_name']}</td>
         <td>{track['count']}</td>
         <td>{track['genre'][:3]}</td>
-        </tr>>"""
+        </tr>"""
 
     html_string += "</table>"
 
@@ -372,6 +372,32 @@ def get_popular_genre(data: pd.DataFrame) -> pd.DataFrame:
         <tr>
         <td>{genre['genre']}</td>
         <td>{genre['count']}</td>
+        </tr>"""
+
+    html_string += "</table>"
+
+    return html_string
+
+
+def get_countries_insights(data: pd.DataFrame) -> pd.DataFrame:
+    """Returns a dataframe that shows how many sales are happening in each country."""
+
+    country_sales = data['country'].value_counts(
+    ).sort_values(ascending=False).reset_index()
+
+    most_popular_artists = data.groupby('country')['artist'].apply(
+        lambda x: x.value_counts().idxmax()).reset_index()
+
+    final = pd.merge(country_sales, most_popular_artists).to_dict('records')
+
+    html_string = "<table><tr><th> Country </th><th> Number of Sales </th><th> Top Artist </th>"
+
+    for country in final:
+        html_string += f"""
+        <tr>
+        <td>{country['country']}</td>
+        <td>{country['count']}</td>
+        <td>{country['artist']}</td>
         </tr>>"""
 
     html_string += "</table>"
@@ -379,31 +405,13 @@ def get_popular_genre(data: pd.DataFrame) -> pd.DataFrame:
     return html_string
 
 
-def get_countries_with_most_sales(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe that shows how many sales are happening in each country."""
-
-    country_sales = data['country'].value_counts(
-    ).sort_values(ascending=False).reset_index()
-
-    return country_sales
-
-
-def get_popular_artist_per_country(data: pd.DataFrame) -> pd.DataFrame:
-    """Returns a dataframe that shows which artist is the most popular in each country"""
-
-    most_popular_artists = data.groupby('country')['artist'].apply(
-        lambda x: x.value_counts().idxmax()).reset_index()
-
-    return most_popular_artists
-
-
 def generate_html_string(data: pd.DataFrame) -> str:
-    """Returns a html string that contains all the daily report anlayses"""
+    """Returns a html string that contains all the daily report analyses"""
 
     html_string = f"""
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=210mm, height=297mm", inital-scale=1.0">
+        <meta name="viewport" content="width=210mm, height=297mm", initial-scale=1.0">
         <link rel="stylesheet" href="static/style.css">
         </head>
     <body>
@@ -487,13 +495,7 @@ def generate_html_string(data: pd.DataFrame) -> str:
                 Highlighting countries with the most sales provides valuable geographical insights.
                 Additionally, identifying the most popular artists in each country offers a nuanced view of regional music preferences.
             </p>
-    <table class="center">
-        <tr>
-        <th> Country </th>
-        <th> Sales </th>
-        <th> Top Artist</th>
-        </tr>
-    </table>
+            {get_countries_insights(data)}
     </div>
     """
     return html_string
@@ -519,44 +521,24 @@ def convert_html_to_pdf(source_html, output_filename):
     return pisa_status.err
 
 
-def generate_pdf_report(data: pd.DataFrame):
-    """Creates a pdf report """
-
-    html_string = generate_html_string(data)
-    convert_html_to_pdf(html_string, 'Bancamp-Daily-Report.pdf')
-
-
-# def handler(event=None, context=None) -> dict:
-#     """Handler for the lambda function"""
-
-#     load_dotenv()
-
-#     connection = get_db_connection()
-
-#     all_data = load_all_data(connection)
-
-#     return {"pdf_report":}
-
-
-if __name__ == "__main__":
+def handler(event=None, context=None) -> dict:
+    """Handler for the lambda function"""
 
     load_dotenv()
 
     connection = get_db_connection()
 
     all_data = load_all_data(connection)
-    # top_5_albums = get_top_5_sold_albums(all_data)
-    # top_5_tracks = get_top_5_sold_tracks(all_data)
-    # top_5_grossing_albums = get_top_5_grossing_albums(all_data)
-    # top_5_grossing_tracks = get_top_5_grossing_tracks(all_data)
-    # top_5_albums_list = top_5_albums['item_name'].tolist()
-    # top_5_tracks_list = top_5_tracks['item_name'].tolist()
-    # album_genres = get_album_genres(all_data, top_5_albums_list)
-    # track_genres = get_track_genres(all_data, top_5_tracks_list)
 
-    # print(all_data)
-    # print(get_album_genres(all_data))
+    html_string = generate_html_string(all_data)
 
-    html_report = generate_html_string(all_data)
+    pdf_file_path = '/tmp/Bandcamp-Daily-Report.pdf'
+    convert_html_to_pdf(html_string, pdf_file_path)
 
-    generate_pdf_report(all_data)
+    # Return the file path
+    return {"pdf_report_path": pdf_file_path}
+
+
+if __name__ == "__main__":
+
+    print(handler())
