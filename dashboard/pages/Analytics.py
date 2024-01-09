@@ -53,7 +53,7 @@ def load_all_data(db_connection: extensions.connection) -> pd.DataFrame:
 def build_date_range_slider() -> list[datetime]:
     """Creates a slider for user to select data sample range; default range is the last 24 hours."""
     return st.slider('Select Date Range:', min_value=pd.to_datetime(
-        '2024-01-04 00:00:00+00:00', utc=True).date(),
+        '2024-01-08 00:00:00+00:00', utc=True).date(),
         max_value=pd.to_datetime('now', utc=True).date(),
         value=((pd.Timestamp('now', tz='UTC') - pd.Timedelta(days=1)
                 ).date(), pd.Timestamp('now', tz='UTC').date()),
@@ -72,10 +72,10 @@ def create_sales_chart(df, object_type):
         chart_title = F'Sales Over Time - Top {object_type.title()}s'
 
     else:
-        suggestions = {[
+        suggestions = set([
             f"{track} (Track)" if item_type == 1 else f"{track} (Album)"
             for track, item_type in zip(df[f'{object_type}'], df['item_type'])
-        ]}
+        ])
 
         selected_tracks = st.multiselect(
             "Select Track/Albums", suggestions)
@@ -154,7 +154,7 @@ def create_album_track_graph(df):
         y=alt.Y('count', title='Number of Copies sold'),
         color=alt.Color('item_name:N', scale=alt.Scale(scheme='blues'))
     ).properties(
-        title='Number of Sales for the Artists top albums/tracks',
+        title='Number of Sales for the artists top albums/tracks',
         width=600,
         height=400
     )
@@ -220,6 +220,8 @@ if __name__ == "__main__":
         subset=['sale_time', 'amount', 'item_name', 'artist'])
 
     with st.container(border=True):
+        st.write("""Explore and analyse current music sales with our live analytics platform.
+                    Choose your desired date range by adjusting the slider below.""")
         time_sample = build_date_range_slider()
 
     start_timestamp = pd.to_datetime(time_sample[0], utc=True)
@@ -345,6 +347,12 @@ if __name__ == "__main__":
                     Total Copies Sold: {len(filtered_track_data)}</div>""",
                     unsafe_allow_html=True)
 
+                st.markdown(
+                    f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
+                    Highest selling Price: {'${:.2f}'.format(filtered_all_data['amount'].max() /100)}
+                    </div>""",
+                    unsafe_allow_html=True)
+
     with st.container(border=True):
 
         st.subheader(
@@ -368,6 +376,13 @@ if __name__ == "__main__":
                 st.markdown(
                     f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
                     Top Country: {top_countries['country'].iloc[0]}</div>""",
+                    unsafe_allow_html=True)
+
+                top_genre = filtered_artist['genre'].value_counts(
+                ).reset_index()
+                st.markdown(
+                    f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
+                    Top Genre: {top_genre['genre'].iloc[0].title()}</div>""",
                     unsafe_allow_html=True)
 
         with columns[1]:
