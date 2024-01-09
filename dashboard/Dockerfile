@@ -1,15 +1,17 @@
 FROM python:latest
 
 WORKDIR /app
+RUN mkdir pages
+RUN mkdir .streamlit
 
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt 
 
 COPY country_codes.csv .
-COPY /root/pages/Newsletter.py .
-COPY /root/pages/Analytics.py .
+COPY /pages/Newsletter.py pages
+COPY /pages/Dashboard.py pages
 COPY Home.py .
-COPY config.toml /root/.streamlit/config.toml
+COPY /.streamlit/config.toml .streamlit
 
 EXPOSE 8501
 

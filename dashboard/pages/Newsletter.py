@@ -24,8 +24,8 @@ def get_db_connection() -> extensions.connection:
 def send_confirmation_email(email):
     """Given an email, adds it to SES on AWS."""
     ses = client('ses',
-                 aws_access_key_id=environ["AWS_ACCESS_KEY_ID"],
-                 aws_secret_access_key=environ["AWS_SECRET_ACCESS_KEY"])
+                 aws_access_key_id=environ["AWS_ACCESS_KEY_ID_"],
+                 aws_secret_access_key=environ["AWS_SECRET_ACCESS_KEY_"])
 
     ses.verify_email_identity(
         EmailAddress=email
