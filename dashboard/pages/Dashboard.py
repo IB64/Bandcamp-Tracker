@@ -418,8 +418,12 @@ if __name__ == "__main__":
         st.subheader(
             'Country/Genre heat map')
 
+        top_genres = filtered_duplicate_data['genre'].value_counts(
+        ).reset_index()
+        top_genre = top_genres['genre'].iloc[0]
+
         selected_genre = st.selectbox(
-            "Select a Genre", filtered_duplicate_data['genre'].unique())
+            "Select a Genre", [top_genre] + list(filtered_duplicate_data['genre'].unique()))
 
         genre_filtered_data = filtered_duplicate_data[filtered_duplicate_data['genre']
                                                       == selected_genre]

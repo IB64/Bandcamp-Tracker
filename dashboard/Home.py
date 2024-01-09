@@ -4,9 +4,6 @@ import streamlit as st
 
 def main():
     """Main function to create the Home page for the dashboard."""
-    st.set_page_config(
-        page_title="BandCamp Analytics",
-        page_icon="🎵",)
 
     st.write("# BandCamp Analytics")
 
@@ -34,4 +31,8 @@ def main():
 
 
 if __name__ == "__main__":
+    st.set_page_config(
+        page_title="BandCamp Analytics",
+        page_icon="🎵",)
+
     main()
