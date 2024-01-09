@@ -50,31 +50,19 @@ def load_all_data(db_connection: extensions.connection) -> pd.DataFrame:
         return pd.DataFrame(tuples, columns=column_names)
 
 
-def build_dater_range_slider() -> list[datetime]:
-    """Creates a slider for user to select data sample range; default range is the last 24 hours."""
-    return st.slider('Select Date Range:', min_value=pd.to_datetime(
-        '2024-01-08 00:00:00+00:00', utc=True).date(),
-        max_value=pd.to_datetime('now', utc=True).date(),
-        value=((pd.Timestamp('now', tz='UTC') - pd.Timedelta(days=1)
-                ).date(), pd.Timestamp('now', tz='UTC').date()),
-        format="DD/MM/YYYY",
-    )
-
-
 def build_date_range_slider() -> tuple[datetime, datetime]:
     """Creates a date range selector for user to choose a date range."""
 
     end_date = datetime.utcnow()
     start_date = end_date - pd.Timedelta(days=1)
 
-    # Get user input for start and end dates
     start_date = st.date_input("Select start date:", start_date)
     end_date = st.date_input("Select end date:", end_date)
 
     return start_date, end_date
 
 
-def create_sales_chart(df, object_type):
+def create_sales_chart(df: pd.DataFrame, object_type: str) -> None:
     """Creates the line graph showing sales of artists/genres/tracks over time."""
 
     if object_type != 'item_name':
@@ -128,7 +116,7 @@ def create_sales_chart(df, object_type):
     st.altair_chart(artist_chart, use_container_width=True)
 
 
-def create_country_graph(df):
+def create_country_graph(df: pd.DataFrame) -> None:
     """Creates a bar chart showing the number of sales for each country."""
     total_sales = df.groupby('country').size().reset_index(name='count')
     top_items = total_sales.nlargest(5, 'count')
@@ -144,7 +132,7 @@ def create_country_graph(df):
     st.altair_chart(chart, use_container_width=True)
 
 
-def create_price_graph(df):
+def create_price_graph(df: pd.DataFrame) -> None:
     """Creates a line graph showing the number of sales over time."""
     df['sale_time'] = pd.to_datetime(df['sale_time'])
     total_sales = df.groupby(
@@ -160,7 +148,7 @@ def create_price_graph(df):
     st.altair_chart(chart, use_container_width=True)
 
 
-def create_album_track_graph(df):
+def create_album_track_graph(df: pd.DataFrame) -> None:
     """Creates a bar chart showing the number of sales for each album/track an artist has."""
     total_sales = df.groupby('item_name').size().reset_index(name='count')
     top_items = total_sales.nlargest(5, 'count')
@@ -177,7 +165,7 @@ def create_album_track_graph(df):
     st.altair_chart(chart, use_container_width=True)
 
 
-def create_heat_map_graph(df):
+def create_heat_map_graph(df: pd.DataFrame) -> None:
     """Creates a country-genre heat map, showing where genres are most popular in the world."""
     country_count_df = df['country'].value_counts(
     ).reset_index(name='popularity')
