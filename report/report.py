@@ -486,7 +486,7 @@ def send_email(report_file_path: str):
 
     attachment = MIMEApplication(open(report_file_path, 'rb').read())
     attachment.add_header('Content-Disposition',
-                          'attachment', filename='Bandcamp-Daily_Report.pdf')
+                          'attachment', filename='Bandcamp-Daily-Report.pdf')
     message.attach(attachment)
 
     print(message)
