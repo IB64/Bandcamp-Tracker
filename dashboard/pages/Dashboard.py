@@ -50,7 +50,7 @@ def load_all_data(db_connection: extensions.connection) -> pd.DataFrame:
         return pd.DataFrame(tuples, columns=column_names)
 
 
-def build_date_range_slider() -> list[datetime]:
+def build_dater_range_slider() -> list[datetime]:
     """Creates a slider for user to select data sample range; default range is the last 24 hours."""
     return st.slider('Select Date Range:', min_value=pd.to_datetime(
         '2024-01-08 00:00:00+00:00', utc=True).date(),
@@ -59,6 +59,19 @@ def build_date_range_slider() -> list[datetime]:
                 ).date(), pd.Timestamp('now', tz='UTC').date()),
         format="DD/MM/YYYY",
     )
+
+
+def build_date_range_slider() -> tuple[datetime, datetime]:
+    """Creates a date range selector for user to choose a date range."""
+
+    end_date = datetime.utcnow()
+    start_date = end_date - pd.Timedelta(days=1)
+
+    # Get user input for start and end dates
+    start_date = st.date_input("Select start date:", start_date)
+    end_date = st.date_input("Select end date:", end_date)
+
+    return start_date, end_date
 
 
 def create_sales_chart(df, object_type):
@@ -325,6 +338,10 @@ if __name__ == "__main__":
                     st.markdown(content, unsafe_allow_html=True)
 
                 create_price_graph(filtered_data)
+            elif track.strip(' ') == '':
+                pass
+            else:
+                st.write('Album/Track not found')
 
         with cols[1]:
             if len(filtered_data) > 0:
@@ -385,6 +402,11 @@ if __name__ == "__main__":
                     f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
                     Top Genre: {top_genre['genre'].iloc[0].title()}</div>""",
                     unsafe_allow_html=True)
+            elif artist.strip(' ') == '':
+                pass
+
+            else:
+                st.write('Artist not found')
 
         with columns[1]:
             if len(filtered_artist) > 0:
