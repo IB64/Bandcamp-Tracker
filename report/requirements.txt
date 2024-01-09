@@ -1,6 +1,7 @@
 python-dotenv
 pylint
 pytest
+boto3
 psycopg2
 pandas
 ipykernel
