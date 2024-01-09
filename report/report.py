@@ -551,4 +551,4 @@ if __name__ == "__main__":
     pdf_file_path = './Bandcamp-Daily-Report.pdf'
 
     convert_html_to_pdf(html_report, pdf_file_path)
-    send_email(connection, pdf_file_path)
+    # send_email(connection, pdf_file_path)
