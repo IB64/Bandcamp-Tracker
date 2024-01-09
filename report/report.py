@@ -496,8 +496,8 @@ def send_email(report_file_path: str):
         Destinations=[
             'trainee.ishika.madhav@sigmalabs.co.uk',
             'trainee.angelo.beleno@sigmalabs.co.uk',
-            'trainee.cai.thomas@sigmalabs.co.uk',
             'trainee.caitlin.turnidge@sigmalabs.co.uk',
+            'trainee.cai.thomas@sigmalabs.co.uk'
         ],
         RawMessage={
             'Data': message.as_string()
@@ -538,3 +538,4 @@ if __name__ == "__main__":
     pdf_file_path = './Bandcamp-Daily-Report.pdf'
 
     convert_html_to_pdf(html_string, pdf_file_path)
+    send_email(pdf_file_path)
