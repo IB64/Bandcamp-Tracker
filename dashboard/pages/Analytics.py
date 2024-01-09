@@ -96,9 +96,12 @@ def create_sales_chart(df, object_type):
         tops = df[f'{object_type}'].value_counts().head(5).index.tolist()
         selected_df = df[df[f'{object_type}'].isin(tops)]
 
-    grouped_data = selected_df.groupby(['sale_time', f'{object_type}'])[
-        'amount'].sum().reset_index(name='total')
-    grouped_data['total'] = grouped_data['total'] / 100
+    selected_df['sale_time'] = pd.to_datetime(selected_df['sale_time'])
+
+    grouped_data = selected_df.groupby([
+        pd.Grouper(key='sale_time', freq='D'),
+        f'{object_type}'
+    ])['amount'].count().reset_index(name='total')
 
     artist_chart = alt.Chart(grouped_data).mark_line().encode(
         x=alt.X('sale_time:T', title='Time'),
@@ -220,8 +223,6 @@ if __name__ == "__main__":
         subset=['sale_time', 'amount', 'item_name', 'artist'])
 
     with st.container(border=True):
-        st.write("""Explore and analyse current music sales with our live analytics platform.
-                    Choose your desired date range by adjusting the slider below.""")
         time_sample = build_date_range_slider()
 
     start_timestamp = pd.to_datetime(time_sample[0], utc=True)
