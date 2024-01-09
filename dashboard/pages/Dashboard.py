@@ -111,7 +111,8 @@ def create_sales_chart(df: pd.DataFrame, object_type: str) -> None:
         detail=f'{object_type}:N'
     ).properties(
         title=chart_title
-    )
+    ).configure_title(
+        anchor='middle')
 
     st.altair_chart(artist_chart, use_container_width=True)
 
@@ -128,7 +129,10 @@ def create_country_graph(df: pd.DataFrame) -> None:
         title='Number of Sales in top 5 countries',
         width=600,
         height=400
-    )
+    ).configure_title(
+        anchor='middle'
+    ).configure_legend(
+        disable=True)
     st.altair_chart(chart, use_container_width=True)
 
 
@@ -144,6 +148,8 @@ def create_price_graph(df: pd.DataFrame) -> None:
         title='Number of Sales in the last 5 days',
         width=400,
         height=300
+    ).configure_title(
+        anchor='middle'
     )
     st.altair_chart(chart, use_container_width=True)
 
@@ -151,7 +157,7 @@ def create_price_graph(df: pd.DataFrame) -> None:
 def create_album_track_graph(df: pd.DataFrame) -> None:
     """Creates a bar chart showing the number of sales for each album/track an artist has."""
     total_sales = df.groupby('item_name').size().reset_index(name='count')
-    top_items = total_sales.nlargest(5, 'count')
+    top_items = total_sales.nlargest(10, 'count')
 
     chart = alt.Chart(top_items).mark_bar().encode(
         x=alt.X('item_name', title='Item'),
@@ -161,14 +167,32 @@ def create_album_track_graph(df: pd.DataFrame) -> None:
         title='Number of Sales for the artists top albums/tracks',
         width=600,
         height=400
+    ).configure_legend(
+        disable=True
+    ).configure_title(
+        anchor='middle'
     )
     st.altair_chart(chart, use_container_width=True)
 
 
-def create_heat_map_graph(df: pd.DataFrame) -> None:
+def create_heat_map_graph(all_genres_df: pd.DataFrame, genre: str, select: str) -> None:
     """Creates a country-genre heat map, showing where genres are most popular in the world."""
-    country_count_df = df['country'].value_counts(
+
+    genre_filtered_data = all_genres_df[all_genres_df['genre'] == genre.lower(
+    )]
+
+    total_country_counts = all_genres_df['country'].value_counts(
+    ).reset_index(name='total')
+
+    country_count_df = genre_filtered_data['country'].value_counts(
     ).reset_index(name='popularity')
+
+    country_count_df = country_count_df.merge(
+        total_country_counts, left_on='country', right_on='country', how='inner'
+    )
+
+    country_count_df['percentage'] = round((country_count_df['popularity'] /
+                                            country_count_df['total'] * 100), 2)
 
     country_count_df['country'] = country_count_df['country'].replace(
         'United Kingdom', 'United Kingdom of Great Britain and Northern Ireland')
@@ -181,15 +205,22 @@ def create_heat_map_graph(df: pd.DataFrame) -> None:
 
     background = alt.Chart(source).mark_geoshape(fill="white")
 
+    if select == 'Percentage':
+        select = 'percentage'
+        title = 'Total Percentage'
+    if select == 'Total Count':
+        select = 'popularity'
+        title = 'Genre Count'
+
     foreground = alt.Chart(source).mark_geoshape(
         stroke="black", strokeWidth=0.15
     ).encode(
         color=alt.Color(
-            "popularity:N", scale=alt.Scale(scheme="blues"), legend=None,
+            f"{select}:N", scale=alt.Scale(scheme="blues"), legend=None,
         ),
         tooltip=[
             alt.Tooltip("name:N", title="Country"),
-            alt.Tooltip("popularity:Q", title="Genre Count"),
+            alt.Tooltip(f"{select}:Q", title=title),
         ],
     ).transform_lookup(
         lookup="id",
@@ -198,7 +229,7 @@ def create_heat_map_graph(df: pd.DataFrame) -> None:
     ).transform_lookup(
         lookup='name',
         from_=alt.LookupData(country_count_df, 'country', [
-            'popularity'])
+            f'{select}'])
     )
 
     final_map = ((background + foreground).configure_view(strokeWidth=0).properties(
@@ -283,11 +314,12 @@ if __name__ == "__main__":
         st.subheader(
             'Analysis of Specific Tracks and Albums')
 
+        track = st.text_input('Search for a Track or Album')
+        filtered_data = filtered_df[filtered_df['item_name'] == track]
+
         cols = st.columns(2)
 
         with cols[0]:
-            track = st.text_input('Search for a Track or Album')
-            filtered_data = filtered_df[filtered_df['item_name'] == track]
 
             if len(filtered_data) > 0:
                 inner_cols = st.columns(2)
@@ -325,7 +357,6 @@ if __name__ == "__main__":
 
                     st.markdown(content, unsafe_allow_html=True)
 
-                create_price_graph(filtered_data)
             elif track.strip(' ') == '':
                 pass
             else:
@@ -333,18 +364,15 @@ if __name__ == "__main__":
 
         with cols[1]:
             if len(filtered_data) > 0:
-                create_country_graph(filtered_data)
 
                 filtered_all_data = non_duplicate_df[non_duplicate_df['item_name'] == track]
                 most_recent_sale = filtered_data[filtered_data['sale_time']
                                                  == filtered_data['sale_time'].max()]
-
-                st.write("")
-
                 st.markdown(
                     f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
                     Most Recent Price: {'${:.2f}'.format(most_recent_sale.iloc[0]['amount'] / 100)}
-                    </div>""",
+                    </div>
+                    """,
                     unsafe_allow_html=True)
 
                 filtered_track_data = non_duplicate_df[non_duplicate_df['item_name'] == track]
@@ -358,6 +386,16 @@ if __name__ == "__main__":
                     Highest selling Price: {'${:.2f}'.format(filtered_all_data['amount'].max() /100)}
                     </div>""",
                     unsafe_allow_html=True)
+
+        st.write('')
+
+        cols = st.columns(2)
+
+        with cols[0]:
+            create_price_graph(filtered_data)
+
+        with cols[1]:
+            create_country_graph(filtered_data)
 
     with st.container(border=True):
 
@@ -416,15 +454,20 @@ if __name__ == "__main__":
 
     with st.container(border=True):
         st.subheader(
-            'Country/Genre heat map')
+            'Country and Genre Heat Map')
 
-        top_genres = filtered_duplicate_data['genre'].value_counts(
+        genre_counts = filtered_duplicate_data['genre'].value_counts(
         ).reset_index()
-        top_genre = top_genres['genre'].iloc[0]
 
-        selected_genre = st.selectbox(
-            "Select a Genre", [top_genre] + list(filtered_duplicate_data['genre'].unique()))
+        top_genres = genre_counts['genre'][genre_counts['count'] > 100]
 
-        genre_filtered_data = filtered_duplicate_data[filtered_duplicate_data['genre']
-                                                      == selected_genre]
-        create_heat_map_graph(genre_filtered_data)
+        cols = st.columns(2)
+        with cols[0]:
+            selected_genre = st.selectbox(
+                "Select a Genre", [genre.title() for genre in top_genres.unique()])
+        with cols[1]:
+            selection = st.selectbox('Choose Type',
+                                     ['Percentage', 'Total Count'])
+
+        create_heat_map_graph(filtered_duplicate_data,
+                              selected_genre, selection)
