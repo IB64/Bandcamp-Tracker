@@ -371,6 +371,7 @@ def generate_html_string(data: pd.DataFrame) -> str:
             <h1 class=date> {YESTERDAY_DATE} </h1>
         </div>
         <div class="new-page", class="footer">
+            <img class="header" src="./bandcamp_logo.jpeg"  style="width:200px;height:100px;">
             <h2 class=header> Overview </h2>
             <p> This is a daily report that contains the key analyses for <a href="https://bandcamp.com/">Bandcamp</a> data from {YESTERDAY_DATE}.
                 <br> The Bandcamp Tracker Report offers a detailed exploration of sales data, providing valuable insights into the music industry's dynamics.
@@ -386,6 +387,7 @@ def generate_html_string(data: pd.DataFrame) -> str:
             </p>
         </div>
         <div class="new-page" class="footer">
+            <img class="header" src="./bandcamp_logo.jpeg"  style="width:200px;height:100px;">
             <h2 class="header"> Key Metrics </h2>
             <p> This section delves into essential metrics that gauge the overall performance of the music marketplace on Bandcamp.
             It includes the total number of sales, indicating the volume of transaction and the total income generated, offering a financial perspective.
@@ -406,6 +408,7 @@ def generate_html_string(data: pd.DataFrame) -> str:
             </div>
         </div>
         <div class="new-page" class="footer">
+            <img class="header" src="./bandcamp_logo.jpeg"  style="width:200px;height:100px;">
             <h2 class="header"> Sales Overview </h2>
             <p> Explore the top 5 albums and tracks, shedding light on the current preferences of Bandcamp users.
                 This section provides an overview of the most popular music items, giving insights into customer choices and potential trends.
@@ -430,6 +433,7 @@ def generate_html_string(data: pd.DataFrame) -> str:
             </div>
         </div>
         <div class="new-page" class="footer">
+            <img class="header" src="./bandcamp_logo.jpeg"  style="width:200px;height:100px;">
             <h2 class="header"> Genre Analysis </h2>
             <p> Dive into the diverse world of music genres with detailed analysis.
                 The report outlines the top 5 genres overall, the genres associated with the top 5 albums, and the genres of the top 5 tracks.
@@ -440,6 +444,7 @@ def generate_html_string(data: pd.DataFrame) -> str:
             {get_track_genres(data)}
         </div>
         <div class="new-page" class="footer">
+            <img class="header" src="./bandcamp_logo.jpeg"  style="width:200px;height:100px;">
             <h2 class="header"> Regional Insights </h2>
             <p> Understand how music sales vary across different regions.
                 Highlighting countries with the most sales provides valuable geographical insights.
@@ -522,4 +527,14 @@ def handler(event=None, context=None):
 
 if __name__ == "__main__":
 
-    print(handler())
+    load_dotenv()
+
+    connection = get_db_connection()
+
+    yesterday_data = load_yesterday_data(connection)
+
+    html_string = generate_html_string(yesterday_data)
+
+    pdf_file_path = './Bandcamp-Daily-Report.pdf'
+
+    convert_html_to_pdf(html_string, pdf_file_path)

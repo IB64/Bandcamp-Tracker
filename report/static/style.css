@@ -29,6 +29,8 @@ h2.header {
   color: black;
   font-family: Arial;
   text-decoration: underline;
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
 p {
   font-size: 19px;
