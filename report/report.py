@@ -472,7 +472,21 @@ def convert_html_to_pdf(source_html, output_filename):
     return pisa_status.err
 
 
-def send_email(report_file_path: str):
+def load_subscribers(db_connection: extensions.connection) -> pd.DataFrame:
+    """Loads all the data from the database into a pandas dataframe"""
+
+    with db_connection.cursor() as curr:
+
+        curr.execute("""SELECT subscriber_email FROM subscribers;""")
+        tuples = curr.fetchall()
+        subscribers = []
+        for tuple in tuples:
+            subscribers.append(tuple[0])
+
+        return subscribers
+
+
+def send_email(db_connection: extensions.connection, report_file_path: str):
     """
     Attaches the pdf to an email and sends the email
     """
@@ -489,16 +503,11 @@ def send_email(report_file_path: str):
                           'attachment', filename='Bandcamp-Daily-Report.pdf')
     message.attach(attachment)
 
-    print(message)
+    subscribers = load_subscribers(db_connection)
 
     client.send_raw_email(
         Source='trainee.ishika.madhav@sigmalabs.co.uk',
-        Destinations=[
-            'trainee.ishika.madhav@sigmalabs.co.uk',
-            'trainee.angelo.beleno@sigmalabs.co.uk',
-            'trainee.caitlin.turnidge@sigmalabs.co.uk',
-            'trainee.cai.thomas@sigmalabs.co.uk'
-        ],
+        Destinations=subscribers,
         RawMessage={
             'Data': message.as_string()
         }
@@ -521,7 +530,7 @@ def handler(event=None, context=None):
     convert_html_to_pdf(html_string, pdf_file_path)
     print("Report created.")
 
-    send_email(pdf_file_path)
+    send_email(connection, pdf_file_path)
     print("Email sent.")
 
 
