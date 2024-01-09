@@ -60,7 +60,7 @@ def load_yesterday_data(db_connection: extensions.connection) -> pd.DataFrame:
     with db_connection.cursor() as curr:
 
         curr.execute("""
-                    SELECT sale_event.*, country.country, artist, artist.artist_name, genre.genre, item_type.item_type
+                    SELECT sale_event.*, country.country, artist.artist_name, genre.genre, item_type.item_type, item.item_name
                     FROM sale_event
                     JOIN country
                     ON country.country_id = sale_event.country_id
@@ -71,13 +71,13 @@ def load_yesterday_data(db_connection: extensions.connection) -> pd.DataFrame:
                     JOIN item_genre
                     ON item_genre.item_id = item.item_id
                     JOIN genre
-                    ON genre.genre_id = item_genre.genre_id
+                    ON genre.genre_id =item_genre.genre_id
                     JOIN item_type
                     ON item_type.item_type_id = item.item_type_id
-                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day'""")
+                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day';""")
         tuples = curr.fetchall()
         column_names = ['sale_id', 'sale_time', 'amount', 'item_id',
-                        'country_id', 'country', 'artist', 'artist', 'genre', 'item_type']
+                        'country_id', 'country', 'artist', 'genre', 'item_type', 'item_name']
 
         df = pd.DataFrame(tuples, columns=column_names)
 
@@ -527,24 +527,32 @@ def convert_html_to_pdf(source_html, output_filename):
     return pisa_status.err
 
 
-def handler(event=None, context=None) -> dict:
-    """Handler for the lambda function"""
+# def handler(event=None, context=None) -> dict:
+#     """Handler for the lambda function"""
+
+#     load_dotenv()
+
+#     connection = get_db_connection()
+
+#     all_data = load_all_data(connection)
+
+#     html_string = generate_html_string(all_data)
+
+#     pdf_file_path = '/tmp/Bandcamp-Daily-Report.pdf'
+#     convert_html_to_pdf(html_string, pdf_file_path)
+
+#     # Return the file path
+#     return {"pdf_report_path": pdf_file_path}
+
+
+if __name__ == "__main__":
 
     load_dotenv()
 
     connection = get_db_connection()
 
-    all_data = load_all_data(connection)
+    yesterday_data = load_yesterday_data(connection)
 
-    html_string = generate_html_string(all_data)
+    html_string = generate_html_string(yesterday_data)
 
-    pdf_file_path = '/tmp/Bandcamp-Daily-Report.pdf'
-    convert_html_to_pdf(html_string, pdf_file_path)
-
-    # Return the file path
-    return {"pdf_report_path": pdf_file_path}
-
-
-if __name__ == "__main__":
-
-    print(handler())
+    convert_html_to_pdf(html_string, './Bandcamp-Daily-Report.pdf')
