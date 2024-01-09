@@ -29,10 +29,10 @@ Requirements for the project can be found within each subfolder. It is recommend
 ## Architecture Diagram
 An overall view of the cloud infrastructure of the project is shown below:
 
-<img src="architect.jpeg" alt="Architect Diagram" width="500"/>
+<img src="images/architect.jpeg" alt="Architect Diagram" width="500"/>
 
 
 ## Entity Relationship Diagram
 Within the RDS, the data is stored using the following schema:
 
-<img src="database.jpeg" alt="Database Diagram" width="500"/>
+<img src="images/database.jpeg" alt="Database Diagram" width="500"/>
