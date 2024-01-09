@@ -8,7 +8,7 @@ This project is a data-driven solution that regularly scrapes the latest sales f
 
 This projects implements an ETL pipeline that includes, scraping, data transformation and storage in a cloud-based environment. Python libraries such as BeautifulSoup and Pandas are used to extract and process data. Furthermore, AWS services, including Lambda and ECS facilitate the cloud-based infrastructure, ensuring scalability and reliability.
 
-## Ouputs
+## Outputs
 
 - Dashboard: Visual representation of sales trends and genre popularity over time.
 - Daily Reports: Regularly generated PDF reports summarizing the previous day's sales.
