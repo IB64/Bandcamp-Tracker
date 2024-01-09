@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from psycopg2 import extensions, connect
 import pandas as pd
 import boto3
+from botocore.exceptions import ClientError
 from xhtml2pdf import pisa
 
 YESTERDAY_DATE = datetime.strftime(datetime.now() - timedelta(1), '%d-%m-%Y')
@@ -478,7 +479,7 @@ def load_subscribers(db_connection: extensions.connection) -> list[str]:
     with db_connection.cursor() as curr:
 
         curr.execute("""SELECT subscriber_email FROM subscribers;""")
-        tuples = curr.fetchall()  # [(ishika,)(angelo,)]
+        tuples = curr.fetchall()
         subscribers = []
         for tuple in tuples:
             subscribers.append(tuple[0])
@@ -513,7 +514,7 @@ def send_email(db_connection: extensions.connection, report_file_path: str):
                     'Data': message.as_string()
                 }
             )
-        except Exception as e:
+        except ClientError:
             continue
 
 
@@ -545,9 +546,9 @@ if __name__ == "__main__":
 
     yesterday_data = load_yesterday_data(connection)
 
-    html_string = generate_html_string(yesterday_data)
+    html_report = generate_html_string(yesterday_data)
 
     pdf_file_path = './Bandcamp-Daily-Report.pdf'
 
-    convert_html_to_pdf(html_string, pdf_file_path)
+    convert_html_to_pdf(html_report, pdf_file_path)
     send_email(connection, pdf_file_path)
