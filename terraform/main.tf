@@ -18,6 +18,124 @@ data "aws_iam_role" "execution-role" {
     name = "ecsTaskExecutionRole"
 }
 
+# Create Role for the Lambda
+resource "aws_iam_role" "lambda_role" {
+  name = "c9-bandcamp-lambda-role"
+  assume_role_policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+})
+}
+
+# Create Role for the SNS Subscriptions
+resource "aws_iam_role" "subscription_role" {
+  name = "c9-bandcamp-subscription-role"
+  assume_role_policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "sns.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+})
+}
+
+# Create Role for Event Schedule
+resource "aws_iam_role" "event_schedule_role" {
+  name = "c9-bandcamp-schedule-role"
+  assume_role_policy = jsonencode({
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "scheduler.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole",
+                "Condition": {
+                    "StringEquals": {
+                        "aws:SourceAccount": "129033205317"
+                    }
+                }
+            }
+        ]
+    })
+}
+
+# Create Policy for Schedule Role
+
+resource "aws_iam_policy" "event_schedule_policy"{
+  name = "c9-bandcamp-schedule-policy"
+  policy = jsonencode({
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "ecs:RunTask",
+                    "states:StartExecution"
+                ],
+                "Resource": [
+                    "${aws_ecs_task_definition.bandcamp_pipeline_taskdef.arn}",
+                ],
+                "Condition": {
+                    "ArnLike": {
+                        "ecs:cluster": "${data.aws_ecs_cluster.c9-cluster.arn}"
+                    }
+                }
+            },
+            {
+                "Effect": "Allow",
+                "Action": "iam:PassRole",
+                "Resource": [
+                    "*"
+                ],
+                "Condition": {
+                    "StringLike": {
+                        "iam:PassedToService": "ecs-tasks.amazonaws.com"
+                    }
+                }
+            }
+        ]
+    })
+}
+
+# Attach Policy to Role
+
+resource "aws_iam_policy_attachment" "event_schedule_attachment" {
+  name = "c9-bandcamp-attach-policy"
+  roles = [aws_iam_role.event_schedule_role.name]
+  policy_arn = aws_iam_policy.event_schedule_policy.arn
+}
+
+# Create Dashboard Security Group
+
+resource "aws_security_group" "dashboard-sg" {
+  name        = "c9-bandcamp-dashboard-sg"
+  description = "Allow inbound Postgres traffic"
+  vpc_id      = var.VPC_ID
+
+  ingress {
+    description      = "Postgres access"
+    from_port        = 8501
+    to_port          = 8501
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+}
+
 # Create Database Security Group
 resource "aws_security_group" "database-sg" {
   name        = "c9-bandcamp-database-sg"
@@ -100,6 +218,62 @@ resource "aws_ecs_task_definition" "bandcamp_pipeline_taskdef" {
   execution_role_arn = data.aws_iam_role.execution-role.arn
 }
 
+# Create Lambda Function for Report Script
+
+resource "aws_lambda_function" "bandcamp_report_lambda" {
+    function_name = "c9-bandcamp-report-lambda"
+    role = aws_iam_role.lambda_role.arn
+    image_uri = ""
+    package_type = "Image"
+    environment {
+      variables = {
+        "name": "DB_IP", "value": var.DB_IP,
+        "name": "DB_NAME", "value": var.DB_NAME,
+        "name": "DB_PASSWORD", "value": var.DB_PASSWORD,
+        "name": "DB_PORT", "value": var.DB_PORT,
+        "name": "DB_USER", "value": var.DB_USER
+      }
+    }
+}
+
+# Create SNS Topic for Report
+
+resource "aws_sns_topic" "bandcamp_report_sns" {
+    name = "c9-bandcamp-sns"
+}
+
+# Create SNS Subscription
+
+resource "aws_sns_topic_subscription" "bandcamp_report_subscriptions" {
+  endpoint = ["trainee.cai.thomas@sigmalabs.co.uk", "trainee.angelo.beleno@sigmalabs.co.uk", "trainee.ishika.madhav@sigmalabs.co.uk", "trainee.caitlin.turnidge@sigmalabs.co.uk"]
+  protocol = "email"
+  subscription_role_arn = aws_iam_role.subscription_role.arn
+  topic_arn = aws_sns_topic.bandcamp_report_sns.arn
+}
+
+# Create Step Function for Report Script
+
+# resource "aws_sfn_state_machine" "bandcamp_report_sm" {
+#     name = "c9-bandcamp-sm"
+#     role_arn = ""
+#     definition = jsondecode([
+#         {
+#             "StartAt": "GenerateReport",
+#             "States": {
+#                 "GenerateReport": {
+#                     "Type": "Task",
+#                     "Resource": "${aws_lambda_function.bandcamp_report_lambda.arn}"
+#                 },
+#                 "SendReport": {
+#                     "Type": "Task",
+#                     "Resource": "${}"
+#                     "End": true
+#                 }
+#             }
+#         }
+#     ])
+# }
+
 # Create Dashboard Task Definition
 
 resource "aws_ecs_task_definition" "bandcamp_dashboard_taskdef" {
@@ -150,75 +324,15 @@ resource "aws_ecs_task_definition" "bandcamp_dashboard_taskdef" {
 
 resource "aws_ecs_service" "bandcamp_dashboard_service" {
     name = "bandcamp_dashboard_service"
+    cluster = data.aws_ecs_cluster.c9-cluster.id
     task_definition = aws_ecs_task_definition.bandcamp_dashboard_taskdef.arn
-}
-
-# Create Role for Event Schedule
-resource "aws_iam_role" "event_schedule_role" {
-  name = "c9-bandcamp-schedule-role"
-  assume_role_policy = jsonencode({
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Principal": {
-                    "Service": "scheduler.amazonaws.com"
-                },
-                "Action": "sts:AssumeRole",
-                "Condition": {
-                    "StringEquals": {
-                        "aws:SourceAccount": "129033205317"
-                    }
-                }
-            }
-        ]
-    })
-}
-
-# Create Policy for Schedule Role
-
-resource "aws_iam_policy" "event_schedule_policy"{
-  name = "c9-bandcamp-schedule-policy"
-  policy = jsonencode({
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "ecs:RunTask",
-                    "states:StartExecution"
-                ],
-                "Resource": [
-                    "${aws_ecs_task_definition.bandcamp_pipeline_taskdef.arn}",
-                ],
-                "Condition": {
-                    "ArnLike": {
-                        "ecs:cluster": "${data.aws_ecs_cluster.c9-cluster.arn}"
-                    }
-                }
-            },
-            {
-                "Effect": "Allow",
-                "Action": "iam:PassRole",
-                "Resource": [
-                    "*"
-                ],
-                "Condition": {
-                    "StringLike": {
-                        "iam:PassedToService": "ecs-tasks.amazonaws.com"
-                    }
-                }
-            }
-        ]
-    })
-}
-
-# Attach Policy to Role
-
-resource "aws_iam_policy_attachment" "event_schedule_attachment" {
-  name = "c9-bandcamp-attach-policy"
-  roles = [aws_iam_role.event_schedule_role.name]
-  policy_arn = aws_iam_policy.event_schedule_policy.arn
+    desired_count = 1
+    launch_type = "FARGATE"
+    network_configuration {
+      subnets = ["subnet-0d0b16e76e68cf51b", "subnet-081c7c419697dec52", "subnet-02a00c7be52b00368"]
+      security_groups = [aws_security_group.dashboard-sg]
+      assign_public_ip = true
+    }
 }
 
 # Create Pipeline EventBridge Schedule
@@ -248,3 +362,5 @@ resource "aws_scheduler_schedule" "bandcamp_pipeline_schedule" {
     }
   }
 }
+
+# Create Report Script EventBridge Schedule
