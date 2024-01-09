@@ -35,23 +35,6 @@ resource "aws_iam_role" "lambda_role" {
 })
 }
 
-# Create Role for the SNS Subscriptions
-resource "aws_iam_role" "subscription_role" {
-  name = "c9-bandcamp-subscription-role"
-  assume_role_policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "sns.amazonaws.com"
-            },
-            "Action": "sts:AssumeRole"
-        }
-    ]
-})
-}
-
 # Create Role for Event Schedule
 resource "aws_iam_role" "event_schedule_role" {
   name = "c9-bandcamp-schedule-role"
@@ -89,6 +72,7 @@ resource "aws_iam_policy" "event_schedule_policy"{
                 ],
                 "Resource": [
                     "${aws_ecs_task_definition.bandcamp_pipeline_taskdef.arn}",
+                    "${aws_lambda_function.bandcamp_report_lambda.arn}"
                 ],
                 "Condition": {
                     "ArnLike": {
@@ -223,7 +207,7 @@ resource "aws_ecs_task_definition" "bandcamp_pipeline_taskdef" {
 resource "aws_lambda_function" "bandcamp_report_lambda" {
     function_name = "c9-bandcamp-report-lambda"
     role = aws_iam_role.lambda_role.arn
-    image_uri = ""
+    image_uri = "129033205317.dkr.ecr.eu-west-2.amazonaws.com/c9-bandcamp-report:latest"
     package_type = "Image"
     environment {
       variables = {
@@ -235,44 +219,6 @@ resource "aws_lambda_function" "bandcamp_report_lambda" {
       }
     }
 }
-
-# Create SNS Topic for Report
-
-resource "aws_sns_topic" "bandcamp_report_sns" {
-    name = "c9-bandcamp-sns"
-}
-
-# Create SNS Subscription
-
-resource "aws_sns_topic_subscription" "bandcamp_report_subscriptions" {
-  endpoint = ["trainee.cai.thomas@sigmalabs.co.uk", "trainee.angelo.beleno@sigmalabs.co.uk", "trainee.ishika.madhav@sigmalabs.co.uk", "trainee.caitlin.turnidge@sigmalabs.co.uk"]
-  protocol = "email"
-  subscription_role_arn = aws_iam_role.subscription_role.arn
-  topic_arn = aws_sns_topic.bandcamp_report_sns.arn
-}
-
-# Create Step Function for Report Script
-
-# resource "aws_sfn_state_machine" "bandcamp_report_sm" {
-#     name = "c9-bandcamp-sm"
-#     role_arn = ""
-#     definition = jsondecode([
-#         {
-#             "StartAt": "GenerateReport",
-#             "States": {
-#                 "GenerateReport": {
-#                     "Type": "Task",
-#                     "Resource": "${aws_lambda_function.bandcamp_report_lambda.arn}"
-#                 },
-#                 "SendReport": {
-#                     "Type": "Task",
-#                     "Resource": "${}"
-#                     "End": true
-#                 }
-#             }
-#         }
-#     ])
-# }
 
 # Create Dashboard Task Definition
 
@@ -364,3 +310,18 @@ resource "aws_scheduler_schedule" "bandcamp_pipeline_schedule" {
 }
 
 # Create Report Script EventBridge Schedule
+
+resource "aws_scheduler_schedule" "bandcamp_report_schedule" {
+  name = "c9-bandcamp-report-schedule"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression = "cron(0 9 * * ? *)"
+
+  target {
+    arn      = aws_lambda_function.bandcamp_report_lambda.arn
+    role_arn = aws_iam_role.event_schedule_role.arn
+  }
+}
