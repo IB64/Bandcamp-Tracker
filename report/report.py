@@ -25,35 +25,6 @@ def get_db_connection() -> extensions.connection:
         return None
 
 
-def load_all_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from the database into a pandas dataframe"""
-
-    with db_connection.cursor() as curr:
-
-        curr.execute("""
-                    SELECT sale_event.*, country.country, artist.artist_name, genre.genre, item_type.item_type, item.item_name
-                    FROM sale_event
-                    JOIN country
-                    ON country.country_id = sale_event.country_id
-                    JOIN item
-                    ON item.item_id = sale_event.item_id
-                    JOIN artist
-                    ON artist.artist_id = item.artist_id
-                    JOIN item_genre
-                    ON item_genre.item_id = item.item_id
-                    JOIN genre
-                    ON genre.genre_id =item_genre.genre_id
-                    JOIN item_type
-                    ON item_type.item_type_id = item.item_type_id;""")
-        tuples = curr.fetchall()
-        column_names = ['sale_id', 'sale_time', 'amount', 'item_id',
-                        'country_id', 'country', 'artist', 'genre', 'item_type', 'item_name']
-
-        df = pd.DataFrame(tuples, columns=column_names)
-
-        return df
-
-
 def load_yesterday_data(db_connection: extensions.connection) -> pd.DataFrame:
     """Loads all the data from yesterday from the database into a pandas dataframe"""
 
@@ -527,22 +498,22 @@ def convert_html_to_pdf(source_html, output_filename):
     return pisa_status.err
 
 
-# def handler(event=None, context=None) -> dict:
-#     """Handler for the lambda function"""
+def handler(event=None, context=None) -> dict:
+    """Handler for the lambda function"""
 
-#     load_dotenv()
+    load_dotenv()
 
-#     connection = get_db_connection()
+    connection = get_db_connection()
 
-#     all_data = load_all_data(connection)
+    yesterday_data = load_yesterday_data(connection)
 
-#     html_string = generate_html_string(all_data)
+    html_string = generate_html_string(yesterday_data)
 
-#     pdf_file_path = '/tmp/Bandcamp-Daily-Report.pdf'
-#     convert_html_to_pdf(html_string, pdf_file_path)
+    pdf_file_path = '/tmp/Bandcamp-Daily-Report.pdf'
+    convert_html_to_pdf(html_string, pdf_file_path)
 
-#     # Return the file path
-#     return {"pdf_report_path": pdf_file_path}
+    # Return the file path
+    return {"pdf_report_path": pdf_file_path}
 
 
 if __name__ == "__main__":
