@@ -115,9 +115,11 @@ def get_key_analytics(data: pd.DataFrame) -> str:
 
     # amount number of sales
     amount_sales = data['sale_id'].nunique()
+    amount_sales = ('{:,}'.format(amount_sales))
 
     # amount income
     amount_income = (data['amount'].sum())/100
+    amount_income = ('{:,}'.format(amount_income))
 
     html_string = f"""<table class="center">
             <tr>
@@ -145,6 +147,9 @@ def get_top_5_popular_artists(data: pd.DataFrame) -> str:
 
     artists = popular_artists.to_dict('records')
 
+    for dict in artists:
+        dict['count'] = ('{:,}'.format(dict['count']))
+
     html_string = create_table_two_columns(
         'Artist', 'Albums/Tracks Sold', artists, 'artist', 'count')
 
@@ -164,6 +169,9 @@ def get_top_5_grossing_artists(data: pd.DataFrame) -> str:
         artist_sales/100).sort_values(ascending=False).head(5).reset_index()
 
     artists = artist_sales.to_dict('records')
+
+    for dict in artists:
+        dict['amount'] = ('{:,}'.format(dict['amount']))
 
     html_string = create_table_two_columns(
         'Artist', 'Revenue', artists, 'artist', 'amount')
@@ -185,6 +193,9 @@ def get_top_5_sold_albums(data: pd.DataFrame) -> str:
 
     albums = popular_albums.to_dict('records')
 
+    for dict in albums:
+        dict['count'] = ('{:,}'.format(dict['count']))
+
     html_string = create_table_two_columns(
         'Album', 'Copies Sold', albums, 'item_name', 'count')
 
@@ -204,6 +215,9 @@ def get_top_5_sold_tracks(data: pd.DataFrame) -> str:
         5).reset_index()
 
     tracks = popular_tracks.to_dict('records')
+
+    for dict in tracks:
+        dict['count'] = ('{:,}'.format(dict['count']))
 
     html_string = create_table_two_columns(
         'Tracks', 'Copies Sold', tracks, 'item_name', 'count')
@@ -227,6 +241,9 @@ def get_top_5_grossing_albums(data: pd.DataFrame) -> str:
 
     albums = album_sales.to_dict('records')
 
+    for dict in albums:
+        dict['amount'] = ('{:,}'.format(dict['amount']))
+
     html_string = create_table_two_columns(
         'Album', 'Revenue', albums, 'item_name', 'amount')
 
@@ -248,6 +265,9 @@ def get_top_5_grossing_tracks(data: pd.DataFrame) -> str:
         track_sales/100).sort_values(ascending=False).head(5).reset_index()
 
     tracks = track_sales.to_dict('records')
+
+    for dict in tracks:
+        dict['amount'] = ('{:,}'.format(dict['amount']))
 
     html_string = create_table_two_columns(
         'Tracks', 'Revenue', tracks, 'item_name', 'amount')
@@ -281,6 +301,9 @@ def get_album_genres(data: pd.DataFrame) -> str:
 
     final = pd.merge(popular_albums, albums_genre).to_dict('records')
 
+    for dict in final:
+        dict['count'] = ('{:,}'.format(dict['count']))
+
     html_string = create_table_three_columns(
         'Album', 'Copies Sold', 'Genres', final, 'item_name', 'count', 'genre')
 
@@ -313,6 +336,9 @@ def get_track_genres(data: pd.DataFrame) -> pd.DataFrame:
 
     final = pd.merge(popular_tracks, track_genre).to_dict('records')
 
+    for dict in final:
+        dict['count'] = ('{:,}'.format(dict['count']))
+
     html_string = create_table_three_columns(
         'Track', 'Copies Sold', 'Genres', final, 'item_name', 'count', 'genre')
 
@@ -328,6 +354,9 @@ def get_popular_genre(data: pd.DataFrame) -> pd.DataFrame:
     unique_genre_count = data['genre'].value_counts().head(5).reset_index()
 
     genres = unique_genre_count.to_dict('records')
+
+    for dict in genres:
+        dict['count'] = ('{:,}'.format(dict['count']))
 
     html_string = create_table_two_columns(
         'Genre', 'Copies Sold', genres, 'genre', 'count')
@@ -349,6 +378,9 @@ def get_countries_insights(data: pd.DataFrame) -> pd.DataFrame:
 
     final = pd.merge(country_sales, most_popular_artists).head(
         10).to_dict('records')
+
+    for dict in final:
+        dict['count'] = ('{:,}'.format(dict['count']))
 
     html_string = create_table_three_columns(
         'Country', 'Number of Sales', 'Top Artist', final, 'country', 'count', 'artist')
@@ -551,4 +583,4 @@ if __name__ == "__main__":
     pdf_file_path = './Bandcamp-Daily-Report.pdf'
 
     convert_html_to_pdf(html_report, pdf_file_path)
-    send_email(connection, pdf_file_path)
+    # send_email(connection, pdf_file_path)
