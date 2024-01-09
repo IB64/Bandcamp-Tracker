@@ -36,6 +36,6 @@ The files here serve different purposes:
 ### Dockerfile
  - `Dockerfile` - File needed to construct the image that can run the pipeline in a container.
 
-
-## Database Management
-
+### Testing
+- `test_extract.py` - Test the extract script
+- `test_transform.py` - Test the transform script
