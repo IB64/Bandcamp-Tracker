@@ -2,25 +2,45 @@
 from os import environ
 import re
 from dotenv import load_dotenv
+from psycopg2 import extensions, connect
 
 from boto3 import client
 import streamlit as st
 
 
-def subscribe_email_to_sns(email):
-    """Given an email, subscribes it to the SNS topic on AWS."""
-    sns_client = client('sns',
-                        aws_access_key_id=environ["AWS_ACCESS_KEY_ID"],
-                        aws_secret_access_key=environ["AWS_SECRET_ACCESS_KEY"])
+def get_db_connection() -> extensions.connection:
+    """Returns a connection to the AWS Bandcamp database"""
+    try:
+        return connect(user=environ["DB_USER"],
+                       password=environ["DB_PASSWORD"],
+                       host=environ["DB_IP"],
+                       port=environ["DB_PORT"],
+                       database=environ["DB_NAME"])
+    except ConnectionError:
+        print("Error: Cannot connect to the database")
+        return None
 
-    sns_client.subscribe(
-        TopicArn=environ["TOPIC_ARN"],
-        Protocol='Email',
-        Endpoint=email
+
+def send_confirmation_email(email):
+    """Given an email, adds it to SES on AWS."""
+    ses = client('ses',
+                 aws_access_key_id=environ["AWS_ACCESS_KEY_ID"],
+                 aws_secret_access_key=environ["AWS_SECRET_ACCESS_KEY"])
+
+    ses.verify_email_identity(
+        EmailAddress=email
     )
 
 
-def main():
+def add_subscriber(connection, user_email):
+    """Adds the email address to the subscriber table in the database."""
+    with connection.cursor() as cur:
+        cur.execute(
+            f"INSERT INTO subscribers(subscriber_email) VALUES ('{user_email}') ON CONFLICT DO NOTHING;")
+        connection.commit()
+
+
+def main(connection):
     """Main function to create the Newsletter page description."""
     st.write("# Newsletter Email")
 
@@ -58,16 +78,17 @@ def main():
             elif not re.match(EMAIL, user_email):
                 st.write('Not a valid Email')
             else:
-                subscribe_email_to_sns(user_email)
+                send_confirmation_email(user_email)
+                add_subscriber(connection, user_email)
+                st.markdown(" Email has been subscribed! ")
                 st.markdown(
-                    """
-                    **Email has been subscribed!**
-                    Please confirm your email address by clicking 'Confirm Subscription' 
-                    in your most recent email from AWS Notifications.
-                    """
-                )
+                    "Please confirm your email address in the most recent email from AWS.")
 
 
 if __name__ == "__main__":
     load_dotenv()
-    main()
+    st.set_page_config(
+        page_title="BandCamp Analytics",
+        page_icon="🎵",)
+    conn = get_db_connection()
+    main(conn)
