@@ -47,6 +47,7 @@ class TestTransform:
         """
         assert clean_titles("title") == "title"
         assert clean_titles("\n    title    \n") == "title"
+        assert pd.isnull(clean_titles("Untitled")) is True
 
     def test_clean_artists(self):
         """
