@@ -642,6 +642,7 @@ def generate_html_string(db_connection: extensions.connection) -> str:
                 <div class="column">
                     {get_top_5_popular_artists(db_connection)}
                 </div>
+                <br>  </br>
                 <div class="column">
                     {get_top_5_grossing_artists(db_connection)}
                 </div>
