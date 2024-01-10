@@ -11,6 +11,7 @@ import pandas as pd
 import boto3
 from botocore.exceptions import ClientError
 from xhtml2pdf import pisa
+from time import perf_counter
 
 # pylint: disable=E1136
 
@@ -106,12 +107,13 @@ def load_sale_event_data(db_connection: extensions.connection) -> pd.DataFrame:
         return df
 
 
-def get_key_analytics(sale_event_data: pd.DataFrame) -> str:
+def get_key_analytics(db_connection: extensions.connection) -> str:
     """
     Returns a html string of a table that contains information on
     the amount of sales and income.
     """
 
+    sale_event_data = load_sale_event_data(db_connection)
     # amount number of sales
     amount_sales = ('{:,}'.format(sale_event_data['sale_id'].nunique()))
 
@@ -132,21 +134,24 @@ def get_key_analytics(sale_event_data: pd.DataFrame) -> str:
     return html_string
 
 
-def load_artist_data(db_connection: extensions.connection) -> pd.DataFrame:
+def load_top_5_popular_artist_data(db_connection: extensions.connection) -> pd.DataFrame:
     """Loads all the data from yesterday from the database into a pandas dataframe"""
 
     with db_connection.cursor() as curr:
 
         curr.execute("""
-                    SELECT sale_event.sale_id, sale_event.amount, sale_event.item_id, artist.artist_name
+                    SELECT COUNT(sale_event.sale_id) AS count, artist.artist_name
                     FROM sale_event
                     JOIN item
                     ON item.item_id = sale_event.item_id
                     JOIN artist
                     ON artist.artist_id = item.artist_id
-                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day';""")
+                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day'
+                    GROUP BY artist.artist_name
+                    ORDER BY count DESC
+                    LIMIT 5;""")
         tuples = curr.fetchall()
-        column_names = ['sale_id', 'amount', 'item_id',
+        column_names = ['count',
                         'artist']
 
         df = pd.DataFrame(tuples, columns=column_names)
@@ -154,16 +159,40 @@ def load_artist_data(db_connection: extensions.connection) -> pd.DataFrame:
         return df
 
 
-def get_top_5_popular_artists(artist_data: pd.DataFrame) -> str:
+def load_top_5_grossing_artist_data(db_connection: extensions.connection) -> pd.DataFrame:
+    """Loads all the data from yesterday from the database into a pandas dataframe"""
+
+    with db_connection.cursor() as curr:
+
+        curr.execute("""
+                    SELECT SUM(sale_event.amount) AS amount, artist.artist_name
+                    FROM sale_event
+                    JOIN item
+                    ON item.item_id = sale_event.item_id
+                    JOIN artist
+                    ON artist.artist_id = item.artist_id
+                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day'
+                    GROUP BY artist.artist_name
+                    ORDER BY amount DESC
+                    LIMIT 5;""")
+        tuples = curr.fetchall()
+        column_names = ['amount',
+                        'artist']
+
+        df = pd.DataFrame(tuples, columns=column_names)
+
+        return df
+
+
+def get_top_5_popular_artists(db_connection: extensions.connection) -> str:
     """
     Returns a html string of a table that contains information on
     the top 5 most popular artists and how many items they sold
     """
 
-    popular_artists = artist_data['artist'].value_counts(
-    ).sort_values(ascending=False).head(5).reset_index()
+    artist_data = load_top_5_popular_artist_data(db_connection)
 
-    artists = popular_artists.to_dict('records')
+    artists = artist_data.to_dict('records')
 
     format_all_numbers(artists, 'count')
 
@@ -179,14 +208,12 @@ def get_top_5_grossing_artists(db_connection: extensions.connection) -> str:
     the top 5 grossing artists and their total revenue
     """
 
-    artist_data = load_artist_data(db_connection)
+    artist_data = load_top_5_grossing_artist_data(db_connection)
 
-    artist_sales = artist_data.groupby(
-        'artist')['amount'].sum()
-    artist_sales = (
-        artist_sales/100).sort_values(ascending=False).head(5).reset_index()
+    artist_data['amount'] = (
+        artist_data['amount']/100)
 
-    artists = artist_sales.to_dict('records')
+    artists = artist_data.to_dict('records')
 
     format_all_numbers(artists, 'amount')
 
@@ -196,26 +223,50 @@ def get_top_5_grossing_artists(db_connection: extensions.connection) -> str:
     return html_string
 
 
-def load_album_track_data(db_connection: extensions.connection) -> pd.DataFrame:
+def load_album_data(db_connection: extensions.connection) -> pd.DataFrame:
     """Loads all the data from yesterday from the database into a pandas dataframe"""
 
     with db_connection.cursor() as curr:
 
         curr.execute("""
-                    SELECT sale_event.sale_id, sale_event.amount, sale_event.item_id, item.item_name, item_type.item_type, genre.genre
+                    SELECT COUNT(sale_event.sale_id) as count, item.item_name
                     FROM sale_event
                     JOIN item
                     ON item.item_id = sale_event.item_id
-                    JOIN item_genre
-                    ON item_genre.item_id = item.item_id
-                    JOIN genre
-                    ON genre.genre_id =item_genre.genre_id
                     JOIN item_type
                     ON item_type.item_type_id = item.item_type_id
-                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day';""")
+                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day'
+                    AND item_type.item_type_id = 1
+                    GROUP BY item.item_name
+                    ORDER BY count DESC
+                    LIMIT 5;""")
         tuples = curr.fetchall()
-        column_names = ['sale_id', 'amount', 'item_id',
-                        'item_name', 'item_type', 'genre']
+        column_names = ['count', 'item_name']
+
+        df = pd.DataFrame(tuples, columns=column_names)
+
+        return df
+
+
+def load_track_data(db_connection: extensions.connection) -> pd.DataFrame:
+    """Loads all the data from yesterday from the database into a pandas dataframe"""
+
+    with db_connection.cursor() as curr:
+
+        curr.execute("""
+                    SELECT COUNT(sale_event.sale_id) as count, item.item_name
+                    FROM sale_event
+                    JOIN item
+                    ON item.item_id = sale_event.item_id
+                    JOIN item_type
+                    ON item_type.item_type_id = item.item_type_id
+                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day'
+                    AND item_type.item_type_id = 2
+                    GROUP BY item.item_name
+                    ORDER BY count DESC
+                    LIMIT 5;""")
+        tuples = curr.fetchall()
+        column_names = ['count', 'item_name']
 
         df = pd.DataFrame(tuples, columns=column_names)
 
@@ -227,14 +278,9 @@ def get_top_5_sold_albums(db_connection: extensions.connection) -> str:
     Returns a html string of a table that contains information on
     the top 5 sold albums and how many copies they sold
     """
-    album_data = load_album_track_data(db_connection)
-    unique_sales = album_data.drop_duplicates(subset='sale_id', keep='first')
-    album_sales = unique_sales.drop(
-        unique_sales[unique_sales['item_type'] == 'track'].index)
-    popular_albums = album_sales['item_name'].value_counts().sort_values(ascending=False).head(
-        5).reset_index()
+    album_data = load_album_data(db_connection)
 
-    albums = popular_albums.to_dict('records')
+    albums = album_data.to_dict('records')
 
     format_all_numbers(albums, 'count')
 
@@ -249,14 +295,9 @@ def get_top_5_sold_tracks(db_connection: extensions.connection) -> str:
     Returns a html string of a table that contains information on
     the top 5 sold tracks and how many copies they sold
     """
-    track_data = load_album_track_data(db_connection)
-    unique_sales = track_data.drop_duplicates(subset='sale_id', keep='first')
-    track_sales = unique_sales.drop(
-        unique_sales[unique_sales['item_type'] == 'album'].index)
-    popular_tracks = track_sales['item_name'].value_counts().sort_values(ascending=False).head(
-        5).reset_index()
+    track_data = load_track_data(db_connection)
 
-    tracks = popular_tracks.to_dict('records')
+    tracks = track_data.to_dict('records')
 
     format_all_numbers(tracks, 'count')
 
@@ -266,21 +307,67 @@ def get_top_5_sold_tracks(db_connection: extensions.connection) -> str:
     return html_string
 
 
+def load_album_revenue_data(db_connection: extensions.connection) -> pd.DataFrame:
+    """Loads all the data from yesterday from the database into a pandas dataframe"""
+
+    with db_connection.cursor() as curr:
+
+        curr.execute("""
+                    SELECT SUM(sale_event.amount) as amount, item.item_name
+                    FROM sale_event
+                    JOIN item
+                    ON item.item_id = sale_event.item_id
+                    JOIN item_type
+                    ON item_type.item_type_id = item.item_type_id
+                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day'
+                    AND item_type.item_type_id = 1
+                    GROUP BY item.item_name
+                    ORDER BY amount DESC
+                    LIMIT 5;""")
+        tuples = curr.fetchall()
+        column_names = ['amount', 'item_name']
+
+        df = pd.DataFrame(tuples, columns=column_names)
+
+        return df
+
+
+def load_track_revenue_data(db_connection: extensions.connection) -> pd.DataFrame:
+    """Loads all the data from yesterday from the database into a pandas dataframe"""
+
+    with db_connection.cursor() as curr:
+
+        curr.execute("""
+                    SELECT SUM(sale_event.amount) as amount, item.item_name
+                    FROM sale_event
+                    JOIN item
+                    ON item.item_id = sale_event.item_id
+                    JOIN item_type
+                    ON item_type.item_type_id = item.item_type_id
+                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day'
+                    AND item_type.item_type_id = 2
+                    GROUP BY item.item_name
+                    ORDER BY amount DESC
+                    LIMIT 5;""")
+        tuples = curr.fetchall()
+        column_names = ['amount', 'item_name']
+
+        df = pd.DataFrame(tuples, columns=column_names)
+
+        return df
+
+
 def get_top_5_grossing_albums(db_connection: extensions.connection) -> str:
     """
     Returns a html string of a table that contains information on
     the top 5 sold albums and their revenue
     """
-    album_data = load_album_track_data(db_connection)
-    unique_sales = album_data.drop_duplicates(subset='sale_id', keep='first')
-    album_sales = unique_sales.drop(
-        unique_sales[unique_sales['item_type'] == 'track'].index)
-    album_sales = album_sales.groupby(
-        'item_name')['amount'].sum()
-    album_sales = (
-        album_sales/100).sort_values(ascending=False).head(5).reset_index()
+    album_data = load_album_revenue_data(db_connection)
 
-    albums = album_sales.to_dict('records')
+    album_data['amount'] = (
+        album_data['amount']/100)
+
+    albums = album_data.to_dict('records')
 
     format_all_numbers(albums, 'amount')
 
@@ -295,16 +382,12 @@ def get_top_5_grossing_tracks(db_connection: extensions.connection) -> str:
     Returns a html string of a table that contains information on
     the top 5 sold tracks and their revenue
     """
-    track_data = load_album_track_data(db_connection)
-    unique_sales = track_data.drop_duplicates(subset='sale_id', keep='first')
-    track_sales = unique_sales.drop(
-        unique_sales[unique_sales['item_type'] == 'album'].index)
-    track_sales = track_sales.groupby(
-        'item_name')['amount'].sum()
-    track_sales = (
-        track_sales/100).sort_values(ascending=False).head(5).reset_index()
+    track_data = load_track_revenue_data(db_connection)
 
-    tracks = track_sales.to_dict('records')
+    track_data['amount'] = (
+        track_data['amount']/100)
+
+    tracks = track_data.to_dict('records')
 
     format_all_numbers(tracks, 'amount')
 
@@ -314,32 +397,80 @@ def get_top_5_grossing_tracks(db_connection: extensions.connection) -> str:
     return html_string
 
 
+def load_album_genre_data(db_connection: extensions.connection) -> pd.DataFrame:
+    """Loads all the data from yesterday from the database into a pandas dataframe"""
+
+    with db_connection.cursor() as curr:
+
+        curr.execute("""
+                    SELECT COUNT(sale_event.sale_id) as count, item.item_name, genre.genre
+                    FROM sale_event
+                    JOIN item
+                    ON item.item_id = sale_event.item_id
+                    JOIN item_type
+                    ON item_type.item_type_id = item.item_type_id
+                    JOIN item_genre
+                    ON item_genre.item_id = item.item_id
+                    JOIN genre
+                    ON genre.genre_id = item_genre.genre_id
+                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day'
+                    AND item_type.item_type_id = 1
+                    GROUP BY item.item_name, genre.genre
+                    ORDER BY count DESC;""")
+        tuples = curr.fetchall()
+        column_names = ['count', 'item_name', 'genre']
+
+        df = pd.DataFrame(tuples, columns=column_names)
+
+        return df
+
+
+def load_track_genre_data(db_connection: extensions.connection) -> pd.DataFrame:
+    """Loads all the data from yesterday from the database into a pandas dataframe"""
+
+    with db_connection.cursor() as curr:
+
+        curr.execute("""
+                    SELECT COUNT(sale_event.sale_id) as count, item.item_name, genre.genre
+                    FROM sale_event
+                    JOIN item
+                    ON item.item_id = sale_event.item_id
+                    JOIN item_type
+                    ON item_type.item_type_id = item.item_type_id
+                    JOIN item_genre
+                    ON item_genre.item_id = item.item_id
+                    JOIN genre
+                    ON genre.genre_id = item_genre.genre_id
+                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day'
+                    AND item_type.item_type_id = 2
+                    GROUP BY item.item_name, genre.genre
+                    ORDER BY count DESC;""")
+        tuples = curr.fetchall()
+        column_names = ['count', 'item_name', 'genre']
+
+        df = pd.DataFrame(tuples, columns=column_names)
+
+        return df
+
+
 def get_album_genres(db_connection: extensions.connection) -> str:
     """
     Returns a html string of a table that contains information on
     the top 5 sold albums and how many copies they sold and their associated genres
     """
 
-    album_data = load_album_track_data(db_connection)
-    unique_sales = album_data.drop_duplicates(subset='sale_id', keep='first')
+    album_data = load_album_genre_data(db_connection)
 
-    album_sales = unique_sales.drop(
-        unique_sales[unique_sales['item_type'] == 'track'].index)
-    popular_albums = album_sales['item_name'].value_counts().sort_values(ascending=False).head(
-        5).reset_index()
-    selected = popular_albums['item_name'].to_list()
-
-    album_sales = album_data[album_data['item_type'] == 'album']
-
-    filtered_album_sales = album_sales[album_sales['item_name'].isin(selected)]
-
-    albums_genre = filtered_album_sales.groupby(['item_name'])[
+    albums_genre = album_data.groupby(['item_name'])[
         'genre'].agg(list).reset_index()
 
     albums_genre['genre'] = albums_genre['genre'].apply(
         lambda x: list(set(x))[:3])
 
-    final = pd.merge(popular_albums, albums_genre).to_dict('records')
+    album_data = album_data.drop('genre', axis=1)
+
+    final = pd.merge(album_data, albums_genre).drop_duplicates(
+        subset='item_name', keep='first').head(5).to_dict('records')
 
     format_all_numbers(final, 'count')
 
@@ -354,26 +485,18 @@ def get_track_genres(db_connection: extensions.connection) -> pd.DataFrame:
     Returns a html string of a table that contains information on
     the top 5 sold tracks and how many copies they sold and their associated genres
     """
-    track_data = load_album_track_data(db_connection)
-    unique_sales = track_data.drop_duplicates(subset='sale_id', keep='first')
+    track_data = load_track_genre_data(db_connection)
 
-    track_sales = unique_sales.drop(
-        unique_sales[unique_sales['item_type'] == 'album'].index)
-    popular_tracks = track_sales['item_name'].value_counts().sort_values(ascending=False).head(
-        5).reset_index()
-    selected = popular_tracks['item_name'].to_list()
-
-    track_sales = track_data[track_data['item_type'] == 'track']
-
-    filtered_track_sales = track_sales[track_sales['item_name'].isin(selected)]
-
-    track_genre = filtered_track_sales.groupby(['item_name'])[
+    track_genre = track_data.groupby(['item_name'])[
         'genre'].agg(list).reset_index()
 
     track_genre['genre'] = track_genre['genre'].apply(
         lambda x: list(set(x))[:3])
 
-    final = pd.merge(popular_tracks, track_genre).to_dict('records')
+    track_data = track_data.drop('genre', axis=1)
+
+    final = pd.merge(track_data, track_genre).drop_duplicates(
+        subset='item_name', keep='first').head(5).to_dict('records')
 
     format_all_numbers(final, 'count')
 
@@ -389,7 +512,7 @@ def load_genre_data(db_connection: extensions.connection) -> pd.DataFrame:
     with db_connection.cursor() as curr:
 
         curr.execute("""
-                    SELECT sale_event.sale_id, genre.genre
+                    SELECT COUNT(sale_event.sale_id) as count, genre.genre
                     FROM sale_event
                     JOIN item
                     ON item.item_id = sale_event.item_id
@@ -397,9 +520,12 @@ def load_genre_data(db_connection: extensions.connection) -> pd.DataFrame:
                     ON item_genre.item_id = item.item_id
                     JOIN genre
                     ON genre.genre_id =item_genre.genre_id
-                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day';""")
+                    WHERE DATE(sale_time) = CURRENT_DATE - INTERVAL '1 day'
+                    GROUP BY genre.genre
+                    ORDER BY count DESC
+                    LIMIT 5;""")
         tuples = curr.fetchall()
-        column_names = ['sale_id', 'genre']
+        column_names = ['count', 'genre']
 
         df = pd.DataFrame(tuples, columns=column_names)
 
@@ -435,10 +561,8 @@ def get_popular_genre(db_connection: extensions.connection) -> pd.DataFrame:
     the top 5 genres and how many copies a genre has sold
     """
     genre_data = load_genre_data(db_connection)
-    unique_genre_count = genre_data['genre'].value_counts().head(
-        5).reset_index()
 
-    genres = unique_genre_count.to_dict('records')
+    genres = genre_data.to_dict('records')
 
     format_all_numbers(genres, 'count')
 
@@ -474,9 +598,6 @@ def get_countries_insights(db_connection: extensions.connection) -> pd.DataFrame
 def generate_html_string(db_connection: extensions.connection) -> str:
     """Returns a html string that contains all the daily report analyses"""
 
-    sale_event_data = load_sale_event_data(db_connection)
-    artist_data = load_artist_data(db_connection)
-
     html_string = f"""
     <head>
         <meta charset="UTF-8">
@@ -511,7 +632,7 @@ def generate_html_string(db_connection: extensions.connection) -> str:
             <p> This section delves into essential metrics that gauge the overall performance of the music marketplace on Bandcamp.
             It includes the total number of sales, indicating the volume of transaction and the total income generated, offering a financial perspective.
             </p>
-            {get_key_analytics(sale_event_data)}
+            {get_key_analytics(db_connection)}
             <h2 class="header"> Top Performers </h2>
             <p> Discover the artists who stand out as top performers in the sales landscape.
                 The report identifies the top 5 popular artists, showcasing those who have garnered the most attention, and the top 5 grossing artists,
@@ -519,10 +640,10 @@ def generate_html_string(db_connection: extensions.connection) -> str:
             </p>
             <div class="row">
                 <div class="column">
-                    {get_top_5_popular_artists(artist_data)}
+                    {get_top_5_popular_artists(db_connection)}
                 </div>
                 <div class="column">
-                    {get_top_5_grossing_artists(artist_data)}
+                    {get_top_5_grossing_artists(db_connection)}
                 </div>
             </div>
         </div>
@@ -657,13 +778,20 @@ def handler(event=None, context=None):
 
 if __name__ == "__main__":
 
+    t1_start = perf_counter()
+
     load_dotenv()
 
     connection = get_db_connection()
 
     html_report = generate_html_string(connection)
 
-    pdf_file_path = './Bandcamp-Daily-Report.pdf'
+    pdf_file_path = './Bandcamp-Daily-Report2.pdf'
 
     convert_html_to_pdf(html_report, pdf_file_path)
+
+    t1_stop = perf_counter()
+    print("Elapsed time report 2 during the whole program in seconds:",
+          t1_stop-t1_start)
+
     # send_email(connection, pdf_file_path)
