@@ -19,21 +19,21 @@ data "aws_iam_role" "execution-role" {
 }
 
 # Create Role for the Lambda
-resource "aws_iam_role" "lambda_role" {
-  name = "c9-bandcamp-lambda-role"
-  assume_role_policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "lambda.amazonaws.com"
-            },
-            "Action": "sts:AssumeRole"
-        }
-    ]
-})
-}
+# resource "aws_iam_role" "lambda_role" {
+#   name = "c9-bandcamp-lambda-role"
+#   assume_role_policy = jsonencode({
+#     "Version": "2012-10-17",
+#     "Statement": [
+#         {
+#             "Effect": "Allow",
+#             "Principal": {
+#                 "Service": "lambda.amazonaws.com"
+#             },
+#             "Action": "sts:AssumeRole"
+#         }
+#     ]
+# })
+# }
 
 # # Create Role for Event Schedule
 # resource "aws_iam_role" "event_schedule_role" {
@@ -106,19 +106,19 @@ resource "aws_iam_role" "lambda_role" {
 
 # # Create Dashboard Security Group
 
-# resource "aws_security_group" "dashboard-sg" {
-#   name        = "c9-bandcamp-dashboard-sg"
-#   description = "Allow inbound Postgres traffic"
-#   vpc_id      = var.VPC_ID
+resource "aws_security_group" "dashboard-sg" {
+  name        = "c9-bandcamp-dashboard-sg"
+  description = "Allow inbound Postgres traffic"
+  vpc_id      = var.VPC_ID
 
-#   ingress {
-#     description      = "Postgres access"
-#     from_port        = 8501
-#     to_port          = 8501
-#     protocol         = "tcp"
-#     cidr_blocks      = ["0.0.0.0/0"]
-#   }
-# }
+  ingress {
+    description      = "Postgres access"
+    from_port        = 8501
+    to_port          = 8501
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+}
 
 # # Create Database Security Group
 # resource "aws_security_group" "database-sg" {
@@ -229,8 +229,12 @@ resource "aws_ecs_task_definition" "bandcamp_dashboard_taskdef" {
     container_definitions = jsonencode([
     {
         "name": "bandcamp-dashboard-td",
-        "image": "",
+        "image": "129033205317.dkr.ecr.eu-west-2.amazonaws.com/c9-bandcamp-dashboard:latest",
         "essential": true,
+        "portMappings": [{
+            "containerPort": 8501,
+            "hostPort": 8501
+        }]
         "environment": [
             {
                 "name": "DB_IP",
@@ -251,19 +255,25 @@ resource "aws_ecs_task_definition" "bandcamp_dashboard_taskdef" {
             {
                 "name": "DB_PORT",
                 "value": var.DB_PORT
+            },
+            {
+                "name": "AWS_ACCESS_KEY_ID_",
+                "value": var.AWS_ACCESS_KEY_ID
+            },
+            {
+                "name": "AWS_SECRET_ACCESS_KEY_",
+                "value": var.AWS_SECRET_ACCESS_KEY
+            },
+            {
+                "name": "API_KEY",
+                "value": var.API_KEY
             }
         ],
-        "logConfiguration": {
-            "logDriver": "awslogs",
-            "options": {
-                "awslogs-group": "/ecs/c9-bandcamp-bandcamp-td"
-                "awslogs-region": "eu-west-2"
-                "awslogs-stream-prefix": "ecs"
-                "awslogs-create-group" : "true"
-            }
-        }
     }
 ])
+    memory=2048
+    cpu = 1024
+    execution_role_arn = data.aws_iam_role.execution-role.arn
 }
 
 # Create Dashboard ECS Service 
@@ -276,7 +286,7 @@ resource "aws_ecs_service" "bandcamp_dashboard_service" {
     launch_type = "FARGATE"
     network_configuration {
       subnets = ["subnet-0d0b16e76e68cf51b", "subnet-081c7c419697dec52", "subnet-02a00c7be52b00368"]
-      security_groups = [aws_security_group.dashboard-sg]
+      security_groups = [aws_security_group.dashboard-sg.id]
       assign_public_ip = true
     }
 }
