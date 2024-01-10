@@ -107,6 +107,15 @@ def create_table_three_columns(column_1: str, column_2: str, column_3: str, data
     return html_string
 
 
+def format_all_numbers(number: int) -> int:
+    """
+    Formats numbers so that commas will be inserted where necessary
+    e.g 1000 = 1,000
+    """
+
+    return ('{:,}'.format(number))
+
+
 def get_key_analytics(data: pd.DataFrame) -> str:
     """
     Returns a html string of a table that contains information on
@@ -115,9 +124,11 @@ def get_key_analytics(data: pd.DataFrame) -> str:
 
     # amount number of sales
     amount_sales = data['sale_id'].nunique()
+    amount_sales = format_all_numbers(amount_sales)
 
     # amount income
-    amount_income = (data['amount'].sum())/100
+    amount_income = ((data['amount'].sum())/100.)
+    amount_income = format_all_numbers(amount_income)
 
     html_string = f"""<table class="center">
             <tr>
@@ -141,7 +152,7 @@ def get_top_5_popular_artists(data: pd.DataFrame) -> str:
 
     unique_sales = data.drop_duplicates(subset='sale_id', keep='first')
     popular_artists = unique_sales['artist'].value_counts().sort_values(ascending=False).head(
-        5).reset_index()
+        5).reset_index().apply(format_all_numbers(unique_sales['count']))
 
     artists = popular_artists.to_dict('records')
 
@@ -161,7 +172,7 @@ def get_top_5_grossing_artists(data: pd.DataFrame) -> str:
     artist_sales = unique_sales.groupby(
         'artist')['amount'].sum()
     artist_sales = (
-        artist_sales/100).sort_values(ascending=False).head(5).reset_index()
+        artist_sales/100).sort_values(ascending=False).head(5).reset_index().apply(format_all_numbers(unique_sales['amount']))
 
     artists = artist_sales.to_dict('records')
 
@@ -325,7 +336,8 @@ def get_popular_genre(data: pd.DataFrame) -> pd.DataFrame:
     the top 5 genres and how many copies a genre has sold
     """
 
-    unique_genre_count = data['genre'].value_counts().head(5).reset_index()
+    unique_genre_count = data['genre'].value_counts().head(
+        5).reset_index().apply(format_all_numbers(unique_genre_count['count']))
 
     genres = unique_genre_count.to_dict('records')
 

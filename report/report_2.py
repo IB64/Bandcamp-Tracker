@@ -79,6 +79,15 @@ def create_table_three_columns(column_1: str, column_2: str, column_3: str, data
     return html_string
 
 
+def format_all_numbers(number: int) -> int:
+    """
+    Formats numbers so that commas will be inserted where necessary
+    e.g 1000 = 1,000
+    """
+
+    return ('{:,}'.format(number))
+
+
 def load_sale_event_data(db_connection: extensions.connection) -> pd.DataFrame:
     """Loads all the data from yesterday from the database into a pandas dataframe"""
 
@@ -415,6 +424,8 @@ def get_popular_genre(db_connection: extensions.connection) -> pd.DataFrame:
     unique_genre_count = genre_data['genre'].value_counts().head(
         5).reset_index()
 
+    print()
+
     genres = unique_genre_count.to_dict('records')
 
     html_string = create_table_two_columns(
@@ -633,9 +644,11 @@ if __name__ == "__main__":
 
     connection = get_db_connection()
 
-    html_report = generate_html_string(connection)
+    print(get_popular_genre(connection))
 
-    pdf_file_path = './Bandcamp-Daily-Report.pdf'
+    # html_report = generate_html_string(connection)
 
-    convert_html_to_pdf(html_report, pdf_file_path)
-    # send_email(connection, pdf_file_path)
+    # pdf_file_path = './Bandcamp-Daily-Report.pdf'
+
+    # convert_html_to_pdf(html_report, pdf_file_path)
+    # # send_email(connection, pdf_file_path)
