@@ -547,4 +547,13 @@ def handler(event=None, context=None) -> dict:
 
 if __name__ == "__main__":
 
-    print(handler())
+    load_dotenv()
+
+    connection = get_db_connection()
+
+    all_data = load_all_data(connection)
+
+    html_string = generate_html_string(all_data)
+
+    pdf_file_path = './Bandcamp-Daily-Report.pdf'
+    convert_html_to_pdf(html_string, pdf_file_path)
