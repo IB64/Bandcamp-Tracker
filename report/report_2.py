@@ -12,6 +12,8 @@ import boto3
 from botocore.exceptions import ClientError
 from xhtml2pdf import pisa
 
+# pylint: disable=E1136
+
 YESTERDAY_DATE = datetime.strftime(datetime.now() - timedelta(1), '%d-%m-%Y')
 
 
