@@ -85,7 +85,7 @@ def format_all_numbers(dictionaries: list[dict], key: str):
     e.g 1000 = 1,000
     """
     for dict in dictionaries:
-        dict[f'{key}'] = ('{:,}'.format(dict[f'{key}']))
+        dict[f'{key}'] = '{:,}'.format(dict[f'{key}'])
 
 
 def load_sale_event_data(db_connection: extensions.connection) -> pd.DataFrame:
