@@ -50,6 +50,27 @@ def load_all_data(db_connection: extensions.connection) -> pd.DataFrame:
         return pd.DataFrame(tuples, columns=column_names)
 
 
+def load_sales_data(db_connection: extensions.connection, start_time, end_time) -> pd.DataFrame:
+    """Loads all the artist, album, genre sale data in a given timeframe."""
+    with db_connection.cursor() as curr:
+        curr.execute(f"""
+                    SELECT sale_event.sale_id, sale_event.sale_time, sale_event.amount, sale_event.item_id, item.item_name, item.item_type_id, artist.artist_name, genre.genre
+                    FROM sale_event
+                    JOIN item
+                    ON item.item_id = sale_event.item_id
+                    JOIN artist
+                    ON artist.artist_id = item.artist_id
+                    JOIN item_genre
+                    ON item_genre.item_id = item.item_id
+                    JOIN genre
+                    ON genre.genre_id = item_genre.genre_id
+                    WHERE sale_event.sale_time >= {start_time} AND sale_event.sale_time <= {end_time};""")
+        tuples = curr.fetchall()
+        column_names = ['sale_id', 'sale_time', 'amount',
+                        'item_id', 'item_name', 'item_type', 'artist', 'genre']
+        return pd.DataFrame(tuples, columns=column_names)
+
+
 def build_date_range_slider() -> tuple[datetime, datetime]:
     """Creates a date range selector for user to choose a date range."""
 
@@ -126,7 +147,7 @@ def create_country_graph(df: pd.DataFrame) -> None:
         y=alt.Y('count', title='Number of sales'),
         color=alt.Color('country:N', scale=alt.Scale(scheme='blues'))
     ).properties(
-        title='Number of Sales in top 5 countries',
+        title='Sales in Top 5 Countries',
         width=600,
         height=400
     ).configure_title(
@@ -142,10 +163,10 @@ def create_price_graph(df: pd.DataFrame) -> None:
     total_sales = df.groupby(
         df['sale_time'].dt.date).size().reset_index(name='count')
     chart = alt.Chart(total_sales).mark_line().encode(
-        x=alt.X('sale_time:T', title='Day'),
+        x=alt.X('sale_time:T', title='Time'),
         y=alt.Y('count', title='Number of Copies Sold'),
     ).properties(
-        title='Number of Sales in the last 5 days',
+        title='Sales in the last 5 Days',
         width=400,
         height=300
     ).configure_title(
@@ -160,11 +181,11 @@ def create_album_track_graph(df: pd.DataFrame) -> None:
     top_items = total_sales.nlargest(10, 'count')
 
     chart = alt.Chart(top_items).mark_bar().encode(
-        x=alt.X('item_name', title='Item'),
+        x=alt.X('item_name', title='Track/Album'),
         y=alt.Y('count', title='Number of Copies sold'),
         color=alt.Color('item_name:N', scale=alt.Scale(scheme='blues'))
     ).properties(
-        title='Number of Sales for the artists top albums/tracks',
+        title='Top Track/Album Sales',
         width=600,
         height=400
     ).configure_legend(
@@ -258,6 +279,7 @@ if __name__ == "__main__":
         time_sample = build_date_range_slider()
 
     start_timestamp = pd.to_datetime(time_sample[0], utc=True)
+
     end_timestamp = pd.to_datetime(
         time_sample[1], utc=True) + pd.Timedelta(days=1)
 
@@ -392,10 +414,12 @@ if __name__ == "__main__":
         cols = st.columns(2)
 
         with cols[0]:
-            create_price_graph(filtered_data)
+            if len(filtered_data) > 0:
+                create_price_graph(filtered_data)
 
         with cols[1]:
-            create_country_graph(filtered_data)
+            if len(filtered_data) > 0:
+                create_country_graph(filtered_data)
 
     with st.container(border=True):
 
@@ -450,6 +474,7 @@ if __name__ == "__main__":
                     st.markdown(string, unsafe_allow_html=True)
 
         if len(filtered_artist) > 0:
+            st.write('')
             create_album_track_graph(filtered_artist)
 
     with st.container(border=True):
@@ -466,8 +491,8 @@ if __name__ == "__main__":
             selected_genre = st.selectbox(
                 "Select a Genre", [genre.title() for genre in top_genres.unique()])
         with cols[1]:
-            selection = st.selectbox('Choose Type',
+            selection = st.selectbox('Choose Type of Heat Map',
                                      ['Percentage', 'Total Count'])
 
-        create_heat_map_graph(filtered_duplicate_data,
-                              selected_genre, selection)
+        # create_heat_map_graph(filtered_duplicate_data,
+        #     selected_genre, selection)
