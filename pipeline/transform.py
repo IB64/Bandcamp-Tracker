@@ -75,6 +75,9 @@ def clean_artists(name: str) -> str:
     if has_special_characters(name):
         return pd.NaT
 
+    if name.lower() in ("various artists", "various artist"):
+        return pd.NaT
+
     for word in FEATURING:
         if word in name:
             artists = name.split(f" {word}")
