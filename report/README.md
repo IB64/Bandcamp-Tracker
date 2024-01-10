@@ -47,3 +47,21 @@ These are the set up instructions and all the necessary requirements to run the 
 3. Install all the required modules in `requirements.txt` by running:
     - `pip3 install -r requirements.txt`
 
+
+## Running the Files
+
+To run the `report.py` use the following command:
+- `python3 report.py`
+After running this command, you should see that a PDF called `Bandcamp-Daily-Report.pdf` has been made and added to this folder.
+
+To make your docker image use the following command:
+- `docker build -t "name_of_image" --platform "linux/amd64"` - This will build your docker image so that it can be used on AWS and is built for linux machines.
+
+
+## ECR and Docker Image
+
+Once you have successfully made your docker image using the command in the section above, you can tag your image to an AWS ECR. To do this, you will need to ensure that you have created an AWS ECR. When you have created your AWS ECR, you can use the following commands to tag your docker image to it.
+ - `aws ecr get-login-password --region 'your-region' | docker login --username AWS --password-stdin 'your_aws_account_id'.dkr.ecr.region.amazonaws.com`
+ - `docker images` : This will allow you to find your image id
+ - `docker tag 'your docker image id' 'your ECR URI'`
+ - `docker push 'your ECR URI'`
