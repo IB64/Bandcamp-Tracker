@@ -79,7 +79,7 @@ def create_table_three_columns(column_1: str, column_2: str, column_3: str, data
     return html_string
 
 
-def format_all_numbers(dictionaries: list[dict], key: str) -> int:
+def format_all_numbers(dictionaries: list[dict], key: str):
     """
     Formats numbers so that commas will be inserted where necessary
     e.g 1000 = 1,000
@@ -636,24 +636,22 @@ def send_email(db_connection: extensions.connection, report_file_path: str):
             continue
 
 
-# def handler(event=None, context=None):
-#     """Handler for the lambda function"""
+def handler(event=None, context=None):
+    """Handler for the lambda function"""
 
-#     load_dotenv()
+    load_dotenv()
 
-#     connection = get_db_connection()
+    connection = get_db_connection()
 
-#     sale_event = load_sale_event_data(connection)
+    html_string = generate_html_string(connection)
 
-#     html_string = generate_html_string()
+    pdf_file_path = '/tmp/Bandcamp-Daily-Report.pdf'
 
-#     pdf_file_path = '/tmp/Bandcamp-Daily-Report.pdf'
+    convert_html_to_pdf(html_string, pdf_file_path)
+    print("Report created.")
 
-#     convert_html_to_pdf(html_string, pdf_file_path)
-#     print("Report created.")
-
-#     send_email(connection, pdf_file_path)
-#     print("Email sent.")
+    send_email(connection, pdf_file_path)
+    print("Email sent.")
 
 
 if __name__ == "__main__":
@@ -667,4 +665,4 @@ if __name__ == "__main__":
     pdf_file_path = './Bandcamp-Daily-Report.pdf'
 
     convert_html_to_pdf(html_report, pdf_file_path)
-    # # send_email(connection, pdf_file_path)
+    # send_email(connection, pdf_file_path)
