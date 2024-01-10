@@ -106,12 +106,11 @@ def load_sale_event_data(db_connection: extensions.connection) -> pd.DataFrame:
         return df
 
 
-def get_key_analytics(db_connection: extensions.connection) -> str:
+def get_key_analytics(sale_event_data: pd.DataFrame) -> str:
     """
     Returns a html string of a table that contains information on
     the amount of sales and income.
     """
-    sale_event_data = load_sale_event_data(db_connection)
 
     # amount number of sales
     amount_sales = ('{:,}'.format(sale_event_data['sale_id'].nunique()))
@@ -155,12 +154,11 @@ def load_artist_data(db_connection: extensions.connection) -> pd.DataFrame:
         return df
 
 
-def get_top_5_popular_artists(db_connection: extensions.connection) -> str:
+def get_top_5_popular_artists(artist_data: pd.DataFrame) -> str:
     """
     Returns a html string of a table that contains information on
     the top 5 most popular artists and how many items they sold
     """
-    artist_data = load_artist_data(db_connection)
 
     popular_artists = artist_data['artist'].value_counts(
     ).sort_values(ascending=False).head(5).reset_index()
@@ -476,6 +474,9 @@ def get_countries_insights(db_connection: extensions.connection) -> pd.DataFrame
 def generate_html_string(db_connection: extensions.connection) -> str:
     """Returns a html string that contains all the daily report analyses"""
 
+    sale_event_data = load_sale_event_data(db_connection)
+    artist_data = load_artist_data(db_connection)
+
     html_string = f"""
     <head>
         <meta charset="UTF-8">
@@ -510,7 +511,7 @@ def generate_html_string(db_connection: extensions.connection) -> str:
             <p> This section delves into essential metrics that gauge the overall performance of the music marketplace on Bandcamp.
             It includes the total number of sales, indicating the volume of transaction and the total income generated, offering a financial perspective.
             </p>
-            {get_key_analytics(db_connection)}
+            {get_key_analytics(sale_event_data)}
             <h2 class="header"> Top Performers </h2>
             <p> Discover the artists who stand out as top performers in the sales landscape.
                 The report identifies the top 5 popular artists, showcasing those who have garnered the most attention, and the top 5 grossing artists,
@@ -518,10 +519,10 @@ def generate_html_string(db_connection: extensions.connection) -> str:
             </p>
             <div class="row">
                 <div class="column">
-                    {get_top_5_popular_artists(db_connection)}
+                    {get_top_5_popular_artists(artist_data)}
                 </div>
                 <div class="column">
-                    {get_top_5_grossing_artists(db_connection)}
+                    {get_top_5_grossing_artists(artist_data)}
                 </div>
             </div>
         </div>
