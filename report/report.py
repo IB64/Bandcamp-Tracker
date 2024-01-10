@@ -113,7 +113,7 @@ def format_all_numbers(number: int) -> int:
     e.g 1000 = 1,000
     """
 
-    return ('{:,}'.format(number))
+    return '{:,}'.format(number)
 
 
 def get_key_analytics(data: pd.DataFrame) -> str:
@@ -337,9 +337,12 @@ def get_popular_genre(data: pd.DataFrame) -> pd.DataFrame:
     """
 
     unique_genre_count = data['genre'].value_counts().head(
-        5).reset_index().apply(format_all_numbers(unique_genre_count['count']))
+        5).reset_index()
 
     genres = unique_genre_count.to_dict('records')
+
+    for dict in genres:
+        dict['count'] = '{:,}'.format(dict['count'])
 
     html_string = create_table_two_columns(
         'Genre', 'Copies Sold', genres, 'genre', 'count')
