@@ -786,7 +786,7 @@ if __name__ == "__main__":
 
     html_report = generate_html_string(connection)
 
-    pdf_file_path = './Bandcamp-Daily-Report2.pdf'
+    pdf_file_path = './Bandcamp-Daily-Report.pdf'
 
     convert_html_to_pdf(html_report, pdf_file_path)
 
