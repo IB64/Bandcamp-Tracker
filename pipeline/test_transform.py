@@ -56,6 +56,7 @@ class TestTransform:
         assert clean_artists("Bob featuring Bob2") == "Bob"
         assert clean_artists("Just artist") == "Just artist"
         assert pd.isnull(clean_artists("Various Artists")) is True
+        assert pd.isnull(clean_artists("Various")) is True
 
     def test_clean_dataframe(self):
         """
