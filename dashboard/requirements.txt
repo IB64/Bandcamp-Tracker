@@ -1,0 +1,8 @@
+streamlit
+altair
+vega_datasets
+boto3
+datetime
+python-dotenv
+psycopg2
+pandas

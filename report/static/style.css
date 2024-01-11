@@ -1,6 +1,6 @@
 body {
   background: white;
-  font-family: Arial, sans-serif;
+  font-family: serif;
 }
 main {
   background: white;
@@ -12,35 +12,35 @@ h1.title {
   font-size: 64px;
   text-align: center;
   color: black;
-  font-family: Arial;
+  font-family: serif;
 }
 h1.date {
   font-size: 37px;
   text-align: center;
   color: black;
-  font-family: Arial;
+  font-family: serif;
 }
 .new-page {
   page-break-before: always;
 }
 h2.header {
-  font-size: 37px;
+  font-size: 33px;
   text-align: center;
   color: black;
-  font-family: Arial;
+  font-family: serif;
   text-decoration: underline;
 }
 p {
-  font-size: 19px;
+  font-size: 15px;
   text-align: left;
   color: black;
-  font-family: Arial;
+  font-family: serif;
 }
 p.contents {
-  font-size: 19px;
+  font-size: 15px;
   text-align: center;
   color: black;
-  font-family: Arial;
+  font-family: serif;
 }
 img.title {
     position: absolute;
@@ -64,7 +64,7 @@ table, th, td {
   border: 1px solid;
   border-collapse: collapse;
   width: 100%;
-  font-size: 19px;
+  font-size: 15px;
   background-color: white;
   margin-top:15px;
   text-align: center;
@@ -84,10 +84,10 @@ th{
   margin-right: auto;
 }
 h3.subtitle{
-  font-size: 24px;
+  font-size: 20px;
   text-align: center;
   color: black;
-  font-family: Arial;
+  font-family: serif;
   text-decoration: underline;
 }
 .footer {

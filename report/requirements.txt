@@ -1,8 +1,8 @@
 python-dotenv
 pylint
 pytest
-psycopg2
+boto3
+psycopg2-binary
 pandas
-ipykernel
 kaleido
 xhtml2pdf

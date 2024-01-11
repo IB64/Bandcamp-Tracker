@@ -13,7 +13,7 @@ EPOCH = datetime.utcfromtimestamp(0)
 TIMEOUT = 20
 ALBUM = "a"
 TRACK = "t"
-FIVE_MINS_IN_SECONDS = 300
+FIVE_MINS_IN_SECONDS = 60
 
 
 def unix_time_seconds(dt: datetime) -> int:

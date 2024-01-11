@@ -4,6 +4,7 @@ from os import environ
 from psycopg2 import extensions, connect
 import pandas as pd
 from rapidfuzz.distance import Levenshtein
+from dotenv import load_dotenv
 
 
 def get_db_connection() -> extensions.connection:
@@ -28,20 +29,22 @@ def load_genres(new_genre: str, db_connection: extensions.connection) -> str:
     """
 
     with db_connection.cursor() as cur:
-        cur.execute("SELECT * FROM genre;")
+        #     cur.execute("SELECT * FROM genre ORDER BY genre_id;")
 
-        genres = cur.fetchall()
-        for genre in genres:
-            if genre[1] == new_genre.lower():
-                return new_genre
+        #     genres = cur.fetchall()
+        #     genres = {r[1]: r[0] for r in genres}
+        #     try:
+        #         if genres[new_genre.lower()]:
+        #             return new_genre.lower()
+        #     except KeyError:
 
-            if Levenshtein.normalized_similarity(
-                    genre[1], new_genre.lower()) > 0.75:
-                return genre[1]
+        #     if Levenshtein.normalized_similarity(
+        #             genre[1], new_genre.lower()) > 0.75:
+        #         return genre[1]
 
         new_genre = new_genre.replace("'", "''")
         cur.execute(
-            f"INSERT INTO genre(genre) VALUES ('{new_genre.lower()}');")
+            f"INSERT INTO genre(genre) VALUES ('{new_genre.lower()}') ON CONFLICT DO NOTHING;")
         db_connection.commit()
         return new_genre
 
@@ -55,14 +58,16 @@ def load_artists(new_artist: str, db_connection: extensions.connection) -> None:
         cur.execute("SELECT * FROM artist;")
 
         artists = cur.fetchall()
-        for artist in artists:
-            if artist[1] == new_artist.lower():
+        artists = {r[1]: r[0] for r in artists}
+        try:
+            if artists[new_artist.lower()]:
                 return
+        except KeyError:
 
-        new_artist = new_artist.replace("'", "''")
-        cur.execute(
-            f"INSERT INTO artist(artist_name) VALUES ('{new_artist.lower()}');")
-        db_connection.commit()
+            new_artist = new_artist.replace("'", "''")
+            cur.execute(
+                f"INSERT INTO artist(artist_name) VALUES ('{new_artist.lower()}');")
+            db_connection.commit()
 
 
 def load_countries(new_country: str, db_connection: extensions.connection) -> None:
@@ -70,14 +75,17 @@ def load_countries(new_country: str, db_connection: extensions.connection) -> No
     Finds any unique countries and uploads them to the table.
     """
     with db_connection.cursor() as cur:
-        cur.execute("SELECT * FROM country;")
+        # cur.execute("SELECT * FROM country;")
 
-        countries = cur.fetchall()
-        for country in countries:
-            if country[1] == new_country:
-                return
+        # countries = cur.fetchall()
+        # countries = {r[1]: r[0] for r in countries}
+        # try:
+        #     if countries[new_country.title()]:
+        #         return
+        # except KeyError:
 
-        cur.execute(f"INSERT INTO country(country) VALUES ('{new_country}')")
+        cur.execute(
+            f"INSERT INTO country(country) VALUES ('{new_country}') ON CONFLICT DO NOTHING")
         db_connection.commit()
 
 
@@ -88,23 +96,26 @@ def load_items(new_item: pd.Series, db_connection: extensions.connection) -> Non
     with db_connection.cursor() as cur:
         cur.execute(f"SELECT * FROM item;")
         items = cur.fetchall()
+        items = {r[2]: r[0] for r in items}
 
-        for item in items:
-            if item[2] == new_item['title']:
+        try:
+            if items[new_item['title']]:
                 return
+        #  if a new title is found, insert relevant details to db
+        except KeyError:
 
-        cur.execute(
-            f"SELECT item_type_id FROM item_type WHERE item_type='{new_item['type']}'")
-        item_type_id = cur.fetchone()[0]
-        new_item['artist'] = new_item['artist'].replace("'", "''")
-        cur.execute(f"""SELECT artist_id FROM artist
-                    WHERE artist_name='{new_item['artist'].lower()}'""")
-        artist_id = cur.fetchone()[0]
-        new_item['title'] = new_item['title'].replace("'", "''")
-        cur.execute(f"""INSERT INTO item(item_type_id, item_name, artist_id, item_image)
-                    VALUES ({item_type_id}, '{new_item['title']}', 
-                    {artist_id}, '{new_item['image']}')""")
-        db_connection.commit()
+            cur.execute(
+                f"SELECT item_type_id FROM item_type WHERE item_type='{new_item['type']}'")
+            item_type_id = cur.fetchone()[0]
+            new_item['artist'] = new_item['artist'].replace("'", "''")
+            cur.execute(f"""SELECT artist_id FROM artist
+                        WHERE artist_name='{new_item['artist'].lower()}'""")
+            artist_id = cur.fetchone()[0]
+            new_item['title'] = new_item['title'].replace("'", "''")
+            cur.execute(f"""INSERT INTO item(item_type_id, item_name, artist_id, item_image)
+                        VALUES ({item_type_id}, '{new_item['title']}',
+                        {artist_id}, '{new_item['image']}')""")
+            db_connection.commit()
 
 
 def load_item_genres(new_item: pd.Series, db_connection: extensions.connection) -> None:
@@ -121,17 +132,25 @@ def load_item_genres(new_item: pd.Series, db_connection: extensions.connection) 
         cur.execute(
             f"SELECT genre_id FROM genre WHERE genre = '{new_item['tags'].lower()}'")
         genre_id = cur.fetchone()[0]
-        # genre_tuple = cur.fetchone()
-        # genre_id = genre_tuple[0]
 
         cur.execute(f"SELECT * FROM item_genre;")
+        # item_genres = cur.fetchall()
+        # for item_genre in item_genres:
+        #     if item_genre[1] == item_id and item_genre[2] == genre_id:
+        #         return
+
         item_genres = cur.fetchall()
-        for item_genre in item_genres:
-            if item_genre[1] == item_id and item_genre[2] == genre_id:
+        item_genres = {r[2]: r[1] for r in item_genres}
+
+        try:
+            if item_genres[genre_id] == item_id:
                 return
+        except KeyError:
+            pass
 
         cur.execute(
             f"INSERT INTO item_genre(item_id, genre_id) VALUES ({item_id},{genre_id})")
+        print("Added")
         db_connection.commit()
 
 
@@ -172,3 +191,10 @@ def load_data(sale_df_flat_tags: pd.DataFrame, sale_df: pd.DataFrame, con: exten
     print("Item genres added")
     sale_df.apply(load_sales_event, db_connection=con, axis=1)
     print("Sales added")
+
+
+if __name__ == "__main__":
+    load_dotenv()
+
+    con = get_db_connection()
+    load_item_genres("Nicolas Amaro & Wilowm - Tecnonarin", con)
