@@ -27,7 +27,7 @@ if __name__ == "__main__":
     load_dotenv()
     con = get_db_connection()
     # load_data(clean_data_exploded, clean_data, con)
-    load(con, clean_data_exploded)
+    load(con, clean_data_exploded, clean_data)
     print("Loaded!", perf_counter() - start)
 
     print(f"Time taken: {perf_counter() - start}")
