@@ -795,4 +795,4 @@ if __name__ == "__main__":
     print("Elapsed time report 2 during the whole program in seconds:",
           t1_stop-t1_start)
 
-    # send_email(connection, pdf_file_path)
+    send_email(connection, pdf_file_path)
