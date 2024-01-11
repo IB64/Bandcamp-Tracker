@@ -5,13 +5,14 @@ from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 
+from time import perf_counter
 from dotenv import load_dotenv
 from psycopg2 import extensions, connect
 import pandas as pd
 import boto3
 from botocore.exceptions import ClientError
 from xhtml2pdf import pisa
-from time import perf_counter
+
 
 # pylint: disable=E1136
 
@@ -90,7 +91,9 @@ def format_all_numbers(dictionaries: list[dict], key: str):
 
 
 def load_sale_event_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from yesterday from the database into a pandas dataframe"""
+    """
+    Loads all sale event data from the database into a pandas dataframe
+    """
 
     with db_connection.cursor() as curr:
 
@@ -135,7 +138,9 @@ def get_key_analytics(db_connection: extensions.connection) -> str:
 
 
 def load_top_5_popular_artist_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from yesterday from the database into a pandas dataframe"""
+    """
+    Loads the top 5 artists that appear the most in the database into a pandas dataframe
+    """
 
     with db_connection.cursor() as curr:
 
@@ -160,7 +165,9 @@ def load_top_5_popular_artist_data(db_connection: extensions.connection) -> pd.D
 
 
 def load_top_5_grossing_artist_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from yesterday from the database into a pandas dataframe"""
+    """
+    Loads the top 5 artists that have made the most money from the database into a pandas dataframe
+    """
 
     with db_connection.cursor() as curr:
 
@@ -224,7 +231,9 @@ def get_top_5_grossing_artists(db_connection: extensions.connection) -> str:
 
 
 def load_album_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from yesterday from the database into a pandas dataframe"""
+    """
+    Loads the top 5 albums that have sold the most copies from the database into a pandas dataframe
+    """
 
     with db_connection.cursor() as curr:
 
@@ -249,7 +258,9 @@ def load_album_data(db_connection: extensions.connection) -> pd.DataFrame:
 
 
 def load_track_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from yesterday from the database into a pandas dataframe"""
+    """
+    Loads the top 5 tracks that have sold the most copies from the database into a pandas dataframe
+    """
 
     with db_connection.cursor() as curr:
 
@@ -308,7 +319,9 @@ def get_top_5_sold_tracks(db_connection: extensions.connection) -> str:
 
 
 def load_album_revenue_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from yesterday from the database into a pandas dataframe"""
+    """
+    Loads the top 5 albums that have made the most money from the database into a pandas dataframe
+    """
 
     with db_connection.cursor() as curr:
 
@@ -333,7 +346,9 @@ def load_album_revenue_data(db_connection: extensions.connection) -> pd.DataFram
 
 
 def load_track_revenue_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from yesterday from the database into a pandas dataframe"""
+    """
+    Loads the top 5 tracks that have made the most money from the database into a pandas dataframe
+    """
 
     with db_connection.cursor() as curr:
 
@@ -398,7 +413,10 @@ def get_top_5_grossing_tracks(db_connection: extensions.connection) -> str:
 
 
 def load_album_genre_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from yesterday from the database into a pandas dataframe"""
+    """
+    Loads album data that also contains information about each genre associated
+    with the album from the database and converts it to a pandas dataframe
+    """
 
     with db_connection.cursor() as curr:
 
@@ -426,7 +444,10 @@ def load_album_genre_data(db_connection: extensions.connection) -> pd.DataFrame:
 
 
 def load_track_genre_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from yesterday from the database into a pandas dataframe"""
+    """
+    Loads track data that also contains information about each genre associated
+    with the track from the database and converts it to a pandas dataframe
+    """
 
     with db_connection.cursor() as curr:
 
@@ -507,7 +528,10 @@ def get_track_genres(db_connection: extensions.connection) -> pd.DataFrame:
 
 
 def load_genre_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from yesterday from the database into a pandas dataframe"""
+    """
+    Loads the top 5 genres that have sold the most copies from the database
+    and converts it to a pandas dataframe
+    """
 
     with db_connection.cursor() as curr:
 
@@ -533,7 +557,10 @@ def load_genre_data(db_connection: extensions.connection) -> pd.DataFrame:
 
 
 def load_country_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from yesterday from the database into a pandas dataframe"""
+    """
+    Loads country data alongside the different artists selling in those countries
+    from the database and converts it into a pandas dataframe
+    """
 
     with db_connection.cursor() as curr:
 
