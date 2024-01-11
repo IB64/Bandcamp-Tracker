@@ -221,13 +221,3 @@ def load(db_connection: extensions.connection, flat_dataframe: pd.DataFrame, not
     not_flat_dataframe.apply(
         add_sales_events, db_connection=db_connection, axis=1)
     print("Sales Added!")
-
-
-if __name__ == "__main__":
-    load_dotenv()
-
-    not_in_db = []
-    in_db = []
-
-    print(not_in_db)
-    print(in_db)
