@@ -65,6 +65,19 @@ CREATE TABLE sale_event(
     FOREIGN KEY (country_id) REFERENCES country(country_id)
 );
 
+CREATE TABLE subscribers(
+    subscriber_id BIGINT GENERATED ALWAYS AS IDENTITY,
+    subscriber_email VARCHAR NOT NULL UNIQUE,
+    PRIMARY KEY (subscriber_id)
+);
+
 INSERT INTO item_type(item_type) VALUES
     ('album'),
     ('track');
+
+
+INSERT INTO subscribers(subscriber_email) VALUES
+    ('trainee.ishika.madhav@sigmalabs.co.uk'),
+    ('trainee.cai.thomas@sigmalabs.co.uk'),
+    ('trainee.angelo.beleno@sigmalabs.co.uk');
+
