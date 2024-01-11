@@ -65,7 +65,7 @@ table, th, td {
   border-collapse: collapse;
   width: 100%;
   font-size: 15px;
-  background-color: white;
+  background-color: #dcdedd;
   margin-top:15px;
   text-align: center;
  }
@@ -76,7 +76,7 @@ th, td {
   border-bottom: 1px solid #011022;
 }
 th{
-  background-color: #AFEEEE;
+  background-color: #62929b;
   color: black;
 }
 .center {
