@@ -1,10 +1,19 @@
-"""Script which loads data to the tables in the database"""
+"Script which loads the data into the database"
+
 from os import environ
 
 from psycopg2 import extensions, connect
 import pandas as pd
-from rapidfuzz.distance import Levenshtein
-from dotenv import load_dotenv
+
+GENRES_NOT_IN_DB = set()
+
+ARTISTS_NOT_IN_DB = set()
+
+COUNTRIES_NOT_IN_DB = set()
+
+ITEMS_NOT_IN_DB = set()
+
+TAGS_NOT_IN_DB = []
 
 
 def get_db_connection() -> extensions.connection:
@@ -22,148 +31,194 @@ def get_db_connection() -> extensions.connection:
         print("Error: Cannot connect to the database")
 
 
-def load_genres(new_genre: str, db_connection: extensions.connection) -> str:
+def get_genres(db_connection: extensions.connection) -> dict:
     """
-    Finds any unique genres or genres with a less then 75% match to any in the table 
-    and uploads them to the table
+    Returns a dictionary of all the current genres in the database.
     """
-
     with db_connection.cursor() as cur:
-        #     cur.execute("SELECT * FROM genre ORDER BY genre_id;")
-
-        #     genres = cur.fetchall()
-        #     genres = {r[1]: r[0] for r in genres}
-        #     try:
-        #         if genres[new_genre.lower()]:
-        #             return new_genre.lower()
-        #     except KeyError:
-
-        #     if Levenshtein.normalized_similarity(
-        #             genre[1], new_genre.lower()) > 0.75:
-        #         return genre[1]
-
-        new_genre = new_genre.replace("'", "''")
-        cur.execute(
-            f"INSERT INTO genre(genre) VALUES ('{new_genre.lower()}') ON CONFLICT DO NOTHING;")
-        db_connection.commit()
-        return new_genre
+        cur.execute("SELECT * FROM genre;")
+        genres = cur.fetchall()
+        return {r[1]: r[0] for r in genres}
 
 
-def load_artists(new_artist: str, db_connection: extensions.connection) -> None:
+def get_artists(db_connection: extensions.connection) -> dict:
     """
-    Finds any unique artists and uploads them to the table.
+    Returns a dictionary of all the current artists in the database.
     """
-
     with db_connection.cursor() as cur:
         cur.execute("SELECT * FROM artist;")
 
         artists = cur.fetchall()
-        artists = {r[1]: r[0] for r in artists}
-        try:
-            if artists[new_artist.lower()]:
-                return
-        except KeyError:
-
-            new_artist = new_artist.replace("'", "''")
-            cur.execute(
-                f"INSERT INTO artist(artist_name) VALUES ('{new_artist.lower()}');")
-            db_connection.commit()
+        return {r[1]: r[0] for r in artists}
 
 
-def load_countries(new_country: str, db_connection: extensions.connection) -> None:
+def get_countries(db_connection: extensions.connection) -> dict:
     """
-    Finds any unique countries and uploads them to the table.
+    Returns a dictionary of all the current countries in the database.
     """
     with db_connection.cursor() as cur:
-        # cur.execute("SELECT * FROM country;")
+        cur.execute("SELECT * FROM country;")
 
-        # countries = cur.fetchall()
-        # countries = {r[1]: r[0] for r in countries}
-        # try:
-        #     if countries[new_country.title()]:
-        #         return
-        # except KeyError:
-
-        cur.execute(
-            f"INSERT INTO country(country) VALUES ('{new_country}') ON CONFLICT DO NOTHING")
-        db_connection.commit()
+        countries = cur.fetchall()
+        return {r[1]: r[0] for r in countries}
 
 
-def load_items(new_item: pd.Series, db_connection: extensions.connection) -> None:
+def get_items(db_connection: extensions.connection) -> dict:
     """
-    Finds any unique items and finds all the relevant data to upload to the table.
+    Returns a dictionary of all the current items in the database.
     """
     with db_connection.cursor() as cur:
-        cur.execute(f"SELECT * FROM item;")
+        cur.execute("SELECT * FROM item;")
+
         items = cur.fetchall()
-        items = {r[2]: r[0] for r in items}
+        return {r[2]: r[0] for r in items}
 
-        try:
-            if items[new_item['title']]:
-                return
-        #  if a new title is found, insert relevant details to db
-        except KeyError:
 
+def check_if_genre_in_db(new_genre: str, genres: dict) -> None:
+    """
+    Checks if the new genre is in the database and appends it to a list.
+    """
+    if new_genre.lower() not in genres.keys():
+        new_genre = new_genre.replace("'", "`")
+        GENRES_NOT_IN_DB.add((new_genre.lower(),))
+
+
+def check_if_artist_in_db(new_artist: str, artists: dict) -> None:
+    """
+    Checks if the new artist is in the database and appends it to a list.
+    """
+    if new_artist.lower() not in artists.keys():
+        new_artist = new_artist.replace("'", "`")
+        ARTISTS_NOT_IN_DB.add((new_artist.lower(),))
+
+
+def check_if_country_in_db(new_country: str, countries: dict) -> None:
+    """
+    Checks if the new country is in the database and appends it to a list.
+    """
+    if new_country not in countries.keys():
+        new_country = new_country.replace("'", "`")
+        COUNTRIES_NOT_IN_DB.add((new_country,))
+
+
+def check_if_item_in_db(new_item: str, items: dict, db_connection: extensions.connection) -> None:
+    """
+    Checks if the new item is in the database and retrieves 
+    all the data about the item to append it to a set.
+    """
+    new_item['title'] = new_item['title'].replace("'", "`")
+    new_item['artist'] = new_item['artist'].replace("'", "`")
+    if new_item['title'] not in items.keys():
+        with db_connection.cursor() as cur:
             cur.execute(
                 f"SELECT item_type_id FROM item_type WHERE item_type='{new_item['type']}'")
             item_type_id = cur.fetchone()[0]
-            new_item['artist'] = new_item['artist'].replace("'", "''")
             cur.execute(f"""SELECT artist_id FROM artist
                         WHERE artist_name='{new_item['artist'].lower()}'""")
             artist_id = cur.fetchone()[0]
-            new_item['title'] = new_item['title'].replace("'", "''")
-            cur.execute(f"""INSERT INTO item(item_type_id, item_name, artist_id, item_image)
-                        VALUES ({item_type_id}, '{new_item['title']}',
-                        {artist_id}, '{new_item['image']}')""")
-            db_connection.commit()
+            ITEMS_NOT_IN_DB.add(
+                (new_item['title'], artist_id, item_type_id, new_item['image']))
+            TAGS_NOT_IN_DB.append(new_item['tags'])
 
 
-def load_item_genres(new_item: pd.Series, db_connection: extensions.connection) -> None:
+def add_genres_to_database(db_connection: extensions.connection, list: list[str]) -> None:
     """
-    Connects the items to the genres through table IDs.
+    Adds any new genres into the database.
     """
     with db_connection.cursor() as cur:
-        new_item['title'] = new_item['title'].replace("'", "''")
-        cur.execute(
-            f"SELECT item_id FROM item WHERE item_name = '{new_item['title']}'")
-        item_id = cur.fetchone()[0]
+        query = f"""
+            INSERT INTO genre(genre) VALUES (%s) ON CONFLICT DO NOTHING;
+            """
 
-        new_item['tags'] = new_item['tags'].replace("'", "''")
-        cur.execute(
-            f"SELECT genre_id FROM genre WHERE genre = '{new_item['tags'].lower()}'")
-        genre_id = cur.fetchone()[0]
-
-        cur.execute(f"SELECT * FROM item_genre;")
-        # item_genres = cur.fetchall()
-        # for item_genre in item_genres:
-        #     if item_genre[1] == item_id and item_genre[2] == genre_id:
-        #         return
-
-        item_genres = cur.fetchall()
-        item_genres = {r[2]: r[1] for r in item_genres}
-
-        try:
-            if item_genres[genre_id] == item_id:
-                return
-        except KeyError:
-            pass
-
-        cur.execute(
-            f"INSERT INTO item_genre(item_id, genre_id) VALUES ({item_id},{genre_id})")
-        print("Added")
+        cur.executemany(query, list)
         db_connection.commit()
+        print(f"Genres added!")
 
 
-def load_sales_event(new_sale: pd.Series, db_connection: extensions.connection) -> None:
+def add_artists_to_database(db_connection: extensions.connection, list: list[str]) -> None:
     """
-    Uploads all the sales events to the sales event table.
+    Adds any new artists into the database.
+    """
+
+    with db_connection.cursor() as cur:
+        query = f"""
+            INSERT INTO artist(artist_name) VALUES (%s) ON CONFLICT DO NOTHING;
+            """
+
+        cur.executemany(query, list)
+        db_connection.commit()
+        print("Artists added!")
+
+
+def add_countries_to_database(db_connection: extensions.connection, list: list[str]) -> None:
+    """
+    Adds any new countries into the database.
+    """
+    with db_connection.cursor() as cur:
+        query = f"""
+            INSERT INTO country(country) VALUES (%s) ON CONFLICT DO NOTHING;
+            """
+
+        cur.executemany(query, list)
+        db_connection.commit()
+        print("Countries added!")
+
+
+def add_items_to_database(db_connection: extensions.connection, list: list[tuple]) -> None:
+    """
+    Adds any new items into the database.
+    """
+    with db_connection.cursor() as cur:
+        query = f"""
+            INSERT INTO item(item_name, artist_id, item_type_id, item_image)
+            VALUES (%s, %s, %s, %s);
+        """
+
+        cur.executemany(query, list)
+        db_connection.commit()
+        print("Items added!")
+
+
+def add_item_genres_to_database(db_connection: extensions.connection, list: list[tuple], tags: list[tuple]) -> None:
+    """
+    Adds all the item genre connections for all the new items.
+    """
+    count = 0
+    item_genres = []
+    with db_connection.cursor() as cur:
+        for item in list:
+            cur.execute(
+                f"SELECT item_id FROM item WHERE item_name = '{item[0]}'")
+            item_id = cur.fetchone()[0]
+
+            tags[count] = tags[count].replace("'", "`")
+            cur.execute(
+                f"SELECT genre_id FROM genre WHERE genre = '{tags[count].lower()}'")
+            genre_id = cur.fetchone()[0]
+
+            item_genres.append((item_id, genre_id))
+
+            count += 1
+
+        query = f"""
+            INSERT INTO item_genre (item_id, genre_id) VALUES (%s, %s);
+            """
+
+        cur.executemany(query, item_genres)
+        db_connection.commit()
+        print("Added Item Genres!")
+
+
+def add_sales_events(new_sale: pd.Series, db_connection: extensions.connection) -> None:
+    """
+    Adds all the new sales events to the database.
     """
     with db_connection.cursor() as cur:
         cur.execute(
             f"SELECT country_id FROM country WHERE country='{new_sale['country']}';")
         country_id = cur.fetchone()[0]
 
-        new_sale['title'] = new_sale['title'].replace("'", "''")
+        new_sale['title'] = new_sale['title'].replace("'", "`")
         cur.execute(
             f"SELECT item_id FROM item WHERE item_name='{new_sale['title']}'")
         item_id = cur.fetchone()[0]
@@ -174,27 +229,31 @@ def load_sales_event(new_sale: pd.Series, db_connection: extensions.connection) 
         db_connection.commit()
 
 
-def load_data(sale_df_flat_tags: pd.DataFrame, sale_df: pd.DataFrame, con: extensions.connection) -> None:
+def load(db_connection: extensions.connection, flat_dataframe: pd.DataFrame, not_flat_dataframe: pd.DataFrame) -> None:
     """
-    Finds all the required data to be uploaded to the correct table.
+    Takes the dataframes of all the new sales data and loads it into the database.
     """
-    sale_df_flat_tags['tags'] = sale_df_flat_tags['tags'].apply(
-        load_genres, db_connection=con)
-    print("Tags added")
-    sale_df_flat_tags['artist'].apply(load_artists, db_connection=con)
-    print("Artists added")
-    sale_df_flat_tags['country'].apply(load_countries, db_connection=con)
-    print("Countries added")
-    sale_df_flat_tags.apply(load_items, db_connection=con, axis=1)
-    print("Items added")
-    sale_df_flat_tags.apply(load_item_genres, db_connection=con, axis=1)
-    print("Item genres added")
-    sale_df.apply(load_sales_event, db_connection=con, axis=1)
-    print("Sales added")
+    db_genres = get_genres(db_connection)
+    db_artists = get_artists(db_connection)
+    db_countries = get_countries(db_connection)
+    db_items = get_items(db_connection)
 
+    flat_dataframe['tags'].apply(check_if_genre_in_db, genres=db_genres)
+    add_genres_to_database(db_connection, GENRES_NOT_IN_DB)
 
-if __name__ == "__main__":
-    load_dotenv()
+    flat_dataframe['artist'].apply(check_if_artist_in_db, artists=db_artists)
+    add_artists_to_database(db_connection, ARTISTS_NOT_IN_DB)
 
-    con = get_db_connection()
-    load_item_genres("Nicolas Amaro & Wilowm - Tecnonarin", con)
+    flat_dataframe['country'].apply(
+        check_if_country_in_db, countries=db_countries)
+    add_countries_to_database(db_connection, COUNTRIES_NOT_IN_DB)
+
+    flat_dataframe.apply(check_if_item_in_db, items=db_items,
+                         db_connection=db_connection, axis=1)
+    add_items_to_database(db_connection, ITEMS_NOT_IN_DB)
+
+    add_item_genres_to_database(db_connection, ITEMS_NOT_IN_DB, TAGS_NOT_IN_DB)
+
+    not_flat_dataframe.apply(
+        add_sales_events, db_connection=db_connection, axis=1)
+    print("Sales Added!")
