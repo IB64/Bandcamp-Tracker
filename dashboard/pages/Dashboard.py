@@ -27,10 +27,53 @@ def get_db_connection() -> extensions.connection:
         return None
 
 
-def load_all_data(db_connection: extensions.connection) -> pd.DataFrame:
-    """Loads all the data from the database into a pandas dataframe"""
-    with db_connection.cursor() as curr:
-        curr.execute("""
+@st.cache_data
+def loading_sales_data(_db_connection: extensions.connection, start_time, end_time) -> pd.DataFrame:
+    """Loads all the artist, track and album sale data in a given timeframe."""
+    with _db_connection.cursor() as curr:
+        curr.execute(f"""
+                    SELECT sale_event.sale_id, sale_event.sale_time, item.item_name, item.item_type_id, artist.artist_name
+                    FROM sale_event
+                    JOIN item
+                    ON item.item_id = sale_event.item_id
+                    JOIN artist
+                    ON artist.artist_id = item.artist_id
+                    JOIN item_genre
+                    ON item_genre.item_id = item.item_id
+                    WHERE sale_event.sale_time >= '{start_time}'
+                    AND sale_event.sale_time <= '{end_time}';""")
+        tuples = curr.fetchall()
+        column_names = ['sale_id', 'sale_time',
+                        'item_name', 'item_type', 'artist']
+        return pd.DataFrame(tuples, columns=column_names)
+
+
+@st.cache_data
+def loading_sale_genres(_db_connection: extensions.connection, start_time, end_time) -> pd.DataFrame:
+    """Loads all the genre sale data in a given timeframe."""
+    with _db_connection.cursor() as curr:
+        curr.execute(f"""
+                    SELECT sale_event.sale_id, sale_event.sale_time, item.item_name, genre.genre
+                    FROM sale_event
+                    JOIN item
+                    ON item.item_id = sale_event.item_id
+                    JOIN item_genre
+                    ON item_genre.item_id = item.item_id
+                    JOIN genre
+                    ON genre.genre_id = item_genre.genre_id
+                    WHERE sale_event.sale_time >= '{start_time}' 
+                    AND sale_event.sale_time <= '{end_time}';""")
+        tuples = curr.fetchall()
+        column_names = ['sale_id', 'sale_time',
+                        'item_name', 'genre']
+        return pd.DataFrame(tuples, columns=column_names)
+
+
+@st.cache_data
+def loading_track_data(_db_connection, start_time, end_time, track_name) -> pd.DataFrame:
+    """Loads the artist, album, genre sale data for a given track or album in a given timeframe."""
+    with _db_connection.cursor() as curr:
+        curr.execute(f"""
                     SELECT sale_event.*, country.country, item.item_name, item.item_type_id, item.item_image, artist.artist_name, genre.genre
                     FROM sale_event
                     JOIN country
@@ -38,15 +81,67 @@ def load_all_data(db_connection: extensions.connection) -> pd.DataFrame:
                     JOIN item
                     ON item.item_id = sale_event.item_id
                     JOIN artist
-                    ON artist.artist_id = item.artist_id
+                    ON artist.artist_id = item.artist_id   
                     JOIN item_genre
                     ON item_genre.item_id = item.item_id
                     JOIN genre
-                    ON genre.genre_id = item_genre.genre_id;""")
+                    ON genre.genre_id = item_genre.genre_id
+                    WHERE item.item_name = '{track_name}'
+                    AND sale_event.sale_time >= '{start_time}' 
+                    AND sale_event.sale_time <= '{end_time}';""")
         tuples = curr.fetchall()
-        column_names = ['sale_id', 'sale_time', 'amount', 'item_id',
-                        'country_id', 'country', 'item_name', 'item_type',
+        column_names = ['sale_id', 'sale_time', 'amount', 'item_id', 'country_id',
+                        'country', 'item_name', 'item_type',
                         'item_image', 'artist', 'genre']
+        return pd.DataFrame(tuples, columns=column_names)
+
+
+@st.cache_data
+def get_artist_data(_db_connection: extensions.connection, start_time, end_time, artist_name) -> pd.DataFrame:
+    """Loads all the artist, album, genre sale data for a given artist in a given timeframe."""
+    with _db_connection.cursor() as curr:
+        curr.execute(f"""
+                    SELECT sale_event.*, country.country, item.item_name, item.item_type_id, item.item_image, artist.artist_name, genre.genre
+                    FROM sale_event
+                    JOIN country
+                    ON country.country_id = sale_event.country_id
+                    JOIN item
+                    ON item.item_id = sale_event.item_id
+                    JOIN artist
+                    ON artist.artist_id = item.artist_id   
+                    JOIN item_genre
+                    ON item_genre.item_id = item.item_id
+                    JOIN genre
+                    ON genre.genre_id = item_genre.genre_id
+                    WHERE artist.artist_name = '{artist_name}'
+                    AND sale_event.sale_time >= '{start_time}' 
+                    AND sale_event.sale_time <= '{end_time}';""")
+        tuples = curr.fetchall()
+        column_names = ['sale_id', 'sale_time', 'amount', 'item_id', 'country_id',
+                        'country', 'item_name', 'item_type',
+                        'item_image', 'artist', 'genre']
+        return pd.DataFrame(tuples, columns=column_names)
+
+
+@st.cache_data
+def loading_genre_and_countries(_db_connection, start_time, end_time) -> pd.DataFrame:
+    """Loads the genre and country data required for the heat map."""
+    with _db_connection.cursor() as curr:
+        curr.execute(f"""
+                    SELECT country.country, genre.genre
+                    FROM sale_event
+                    JOIN item
+                    ON item.item_id = sale_event.item_id
+                    JOIN item_genre
+                    ON item_genre.item_id = item.item_id
+                    JOIN genre
+                    ON genre.genre_id = item_genre.genre_id
+                    JOIN country
+                    ON country.country_id = sale_event.country_id
+                    WHERE sale_event.sale_time >= '{start_time}' 
+                    AND sale_event.sale_time <= '{end_time}';""")
+        tuples = curr.fetchall()
+        column_names = ['country', 'genre']
         return pd.DataFrame(tuples, columns=column_names)
 
 
@@ -80,6 +175,7 @@ def create_sales_chart(df: pd.DataFrame, object_type: str) -> None:
 
         selected_tracks = st.multiselect(
             "Select Track/Albums", suggestions)
+
         selections = [track.split(
             " (")[0] for track in selected_tracks]
 
@@ -102,73 +198,103 @@ def create_sales_chart(df: pd.DataFrame, object_type: str) -> None:
     grouped_data = selected_df.groupby([
         pd.Grouper(key='sale_time', freq='D'),
         f'{object_type}'
-    ])['amount'].count().reset_index(name='total')
+    ])[f'{object_type}'].count().reset_index(name='total')
 
     artist_chart = alt.Chart(grouped_data).mark_line().encode(
         x=alt.X('sale_time:T', title='Time'),
-        y=alt.Y('total:Q', title='Number of Sales'),
-        color=alt.Color(f'{object_type}:N', scale=alt.Scale(scheme='blues')),
+        y=alt.Y('total:Q', title='Number of Copies Sold'),
+        color=alt.Color(f'{object_type}:N',
+                        scale=alt.Scale(scheme='lightgreyteal')),
         detail=f'{object_type}:N'
     ).properties(
         title=chart_title
-    )
+    ).configure_title(
+        anchor='middle')
 
     st.altair_chart(artist_chart, use_container_width=True)
 
 
-def create_country_graph(df: pd.DataFrame) -> None:
+@st.cache_data
+def loading_country_graph(df: pd.DataFrame) -> None:
     """Creates a bar chart showing the number of sales for each country."""
     total_sales = df.groupby('country').size().reset_index(name='count')
     top_items = total_sales.nlargest(5, 'count')
     chart = alt.Chart(top_items).mark_bar().encode(
         x=alt.X('country', title='Country'),
-        y=alt.Y('count', title='Number of sales'),
-        color=alt.Color('country:N', scale=alt.Scale(scheme='blues'))
+        y=alt.Y('count', title='Number of Copies Sold'),
+        color=alt.Color('country:N', scale=alt.Scale(scheme='lightgreyteal'))
     ).properties(
-        title='Number of Sales in top 5 countries',
+        title='Sales in Top 5 Countries',
         width=600,
         height=400
-    )
+    ).configure_title(
+        anchor='middle'
+    ).configure_legend(
+        disable=True)
     st.altair_chart(chart, use_container_width=True)
 
 
-def create_price_graph(df: pd.DataFrame) -> None:
+@st.cache_data
+def loading_price_graph(df: pd.DataFrame) -> None:
     """Creates a line graph showing the number of sales over time."""
-    df['sale_time'] = pd.to_datetime(df['sale_time'])
+    print(df)
+    # df['sale_time'] = pd.to_datetime(df['sale_time'])
     total_sales = df.groupby(
-        df['sale_time'].dt.date).size().reset_index(name='count')
+        df['sale_time'].dt.hour).size().reset_index(name='count')
     chart = alt.Chart(total_sales).mark_line().encode(
-        x=alt.X('sale_time:T', title='Day'),
+        x=alt.X('sale_time:T', title='Time'),
         y=alt.Y('count', title='Number of Copies Sold'),
     ).properties(
-        title='Number of Sales in the last 5 days',
+        title='Sales in the last 5 Days',
         width=400,
         height=300
+    ).configure_title(
+        anchor='middle'
     )
     st.altair_chart(chart, use_container_width=True)
 
 
-def create_album_track_graph(df: pd.DataFrame) -> None:
+@st.cache_data
+def loading_album_track_graph(df: pd.DataFrame) -> None:
     """Creates a bar chart showing the number of sales for each album/track an artist has."""
     total_sales = df.groupby('item_name').size().reset_index(name='count')
-    top_items = total_sales.nlargest(5, 'count')
+    top_items = total_sales.nlargest(10, 'count')
 
     chart = alt.Chart(top_items).mark_bar().encode(
-        x=alt.X('item_name', title='Item'),
+        x=alt.X('item_name', title='Track/Album'),
         y=alt.Y('count', title='Number of Copies sold'),
-        color=alt.Color('item_name:N', scale=alt.Scale(scheme='blues'))
+        color=alt.Color('item_name:N', scale=alt.Scale(scheme='lightgreyteal'))
     ).properties(
-        title='Number of Sales for the artists top albums/tracks',
+        title='Top Track/Album Sales',
         width=600,
         height=400
+    ).configure_legend(
+        disable=True
+    ).configure_title(
+        anchor='middle'
     )
     st.altair_chart(chart, use_container_width=True)
 
 
-def create_heat_map_graph(df: pd.DataFrame) -> None:
+@st.cache_data
+def loading_heat_map(all_genres_df: pd.DataFrame, genre: str, select: str) -> None:
     """Creates a country-genre heat map, showing where genres are most popular in the world."""
-    country_count_df = df['country'].value_counts(
+
+    genre_filtered_data = all_genres_df[all_genres_df['genre'] == genre.lower(
+    )]
+
+    total_country_counts = all_genres_df['country'].value_counts(
+    ).reset_index(name='total')
+
+    country_count_df = genre_filtered_data['country'].value_counts(
     ).reset_index(name='popularity')
+
+    country_count_df = country_count_df.merge(
+        total_country_counts, left_on='country', right_on='country', how='inner'
+    )
+
+    country_count_df['percentage'] = round((country_count_df['popularity'] /
+                                            country_count_df['total'] * 100), 2)
 
     country_count_df['country'] = country_count_df['country'].replace(
         'United Kingdom', 'United Kingdom of Great Britain and Northern Ireland')
@@ -181,15 +307,22 @@ def create_heat_map_graph(df: pd.DataFrame) -> None:
 
     background = alt.Chart(source).mark_geoshape(fill="white")
 
+    if select == 'Percentage':
+        select = 'percentage'
+        title = 'Total Percentage'
+    if select == 'Total Count':
+        select = 'popularity'
+        title = 'Genre Count'
+
     foreground = alt.Chart(source).mark_geoshape(
         stroke="black", strokeWidth=0.15
     ).encode(
         color=alt.Color(
-            "popularity:N", scale=alt.Scale(scheme="blues"), legend=None,
+            f"{select}:N", scale=alt.Scale(scheme="lightgreyteal"), legend=None,
         ),
         tooltip=[
             alt.Tooltip("name:N", title="Country"),
-            alt.Tooltip("popularity:Q", title="Genre Count"),
+            alt.Tooltip(f"{select}:Q", title=title),
         ],
     ).transform_lookup(
         lookup="id",
@@ -198,7 +331,7 @@ def create_heat_map_graph(df: pd.DataFrame) -> None:
     ).transform_lookup(
         lookup='name',
         from_=alt.LookupData(country_count_df, 'country', [
-            'popularity'])
+            f'{select}'])
     )
 
     final_map = ((background + foreground).configure_view(strokeWidth=0).properties(
@@ -206,32 +339,43 @@ def create_heat_map_graph(df: pd.DataFrame) -> None:
     st.altair_chart(final_map)
 
 
-if __name__ == "__main__":
-    load_dotenv()
-    connection = get_db_connection()
-    duplicate_df = load_all_data(connection)
+def create_heat_map_section(df):
+    """Creates the container for the heat map."""
 
+    st.subheader(
+        'Country and Genre Heat Map')
+
+    genre_counts = df['genre'].value_counts().reset_index()
+
+    top_genres = genre_counts['genre'][genre_counts['count'] > 50]
+
+    cols = st.columns(2)
+
+    with cols[0]:
+        selected_genre = st.selectbox(
+            "Select a Genre", [genre.title() for genre in top_genres.unique()])
+    with cols[1]:
+        selection = st.selectbox('Choose Type of Heat Map',
+                                 ['Percentage', 'Total Count'])
+
+    loading_heat_map(df,
+                     selected_genre, selection)
+
+
+if __name__ == "__main__":
     st.set_page_config(
         layout="wide", page_title="BandCamp Analysis", page_icon="🎵")
-
-    custom_css = """<style> body { background-color: #79CFE9; } </style>"""
-
-    st.markdown(custom_css, unsafe_allow_html=True)
-
+    load_dotenv()
+    connection = get_db_connection()
     st.title('Live Analytics')
-
-    non_duplicate_df = duplicate_df.drop_duplicates(
-        subset=['sale_time', 'amount', 'item_name', 'artist'])
 
     with st.container(border=True):
         time_sample = build_date_range_slider()
 
     start_timestamp = pd.to_datetime(time_sample[0], utc=True)
+
     end_timestamp = pd.to_datetime(
         time_sample[1], utc=True) + pd.Timedelta(days=1)
-
-    filtered_df = non_duplicate_df[(non_duplicate_df['sale_time'] >= start_timestamp) & (
-        non_duplicate_df['sale_time'] <= end_timestamp)]
 
     with st.container(border=True):
 
@@ -267,40 +411,41 @@ if __name__ == "__main__":
                 st.session_state.artist_button_pressed = False
                 st.session_state.genre_button_pressed = True
 
+        sales = loading_sales_data(connection, start_timestamp, end_timestamp)
+        sales_with_genres = loading_sale_genres(
+            connection, start_timestamp, end_timestamp)
+
         if st.session_state.button_pressed:
-            create_sales_chart(filtered_df, 'item_name')
+            create_sales_chart(sales, 'item_name')
 
         if st.session_state.artist_button_pressed:
-            create_sales_chart(filtered_df, 'artist')
-
-        filtered_duplicate_data = duplicate_df[(duplicate_df['sale_time'] >= start_timestamp) & (
-            duplicate_df['sale_time'] <= end_timestamp)]
+            create_sales_chart(sales, 'artist')
 
         if st.session_state.genre_button_pressed:
-            create_sales_chart(filtered_duplicate_data, 'genre')
+            create_sales_chart(sales_with_genres, 'genre')
 
     with st.container(border=True):
         st.subheader(
             'Analysis of Specific Tracks and Albums')
 
+        track = st.text_input('Search for a Track or Album')
+
+        track_data = loading_track_data(
+            connection, start_timestamp, end_timestamp, track)
+
+        track_data = track_data.drop_duplicates(
+            subset=['artist', 'amount', 'country', 'sale_time', 'item_name'])
+
         cols = st.columns(2)
-
         with cols[0]:
-            track = st.text_input('Search for a Track or Album')
-            filtered_data = filtered_df[filtered_df['item_name'] == track]
-
-            if len(filtered_data) > 0:
+            if len(track_data) > 0:
                 inner_cols = st.columns(2)
                 with inner_cols[0]:
                     st.markdown(
-                        f'<img src="{filtered_data.iloc[0]["item_image"]}" style="width:100%;">',
+                        f'<img src="{track_data.iloc[0]["item_image"]}" style="width:100%;">',
                         unsafe_allow_html=True)
+                    st.write('')
                 with inner_cols[1]:
-
-                    filtered_track_data = duplicate_df[duplicate_df['item_name'] == track]
-
-                    filtered_track_data = filtered_track_data.drop_duplicates(
-                        subset=['genre', 'artist']).head(3)
 
                     st.markdown(
                         """<div style='padding: 4px; font-weight: bold; font-size: 20px'>
@@ -309,87 +454,101 @@ if __name__ == "__main__":
 
                     st.markdown(
                         f"""<div style='padding: 4px; display: inline-block; margin: 4px; 
-                                        background-color: #76D7E8; border-radius: 8px;'>
-                            {filtered_track_data.iloc[0]['artist'].title()}</div>""",
+                                        background-color: #7ba3ac; border-radius: 8px;'>
+                            {track_data.iloc[0]['artist'].title()}</div>""",
                         unsafe_allow_html=True)
 
                     content = """<div style='padding: 4px; font-weight: bold;
                                            font-size: 20px'>Genres:</div><ul>"""
 
-                    for index, row in filtered_track_data.iterrows():
+                    track_data_genres = track_data.drop_duplicates(
+                        subset='genre').head(3)
+
+                    for index, row in track_data_genres.iterrows():
                         content += f"""<li style='padding: 4px; display: inline-block; margin: 4px;
-                                                  background-color: #76D7E8; border-radius: 8px;'>
+                                                  background-color: #7ba3ac; border-radius: 8px;'>
                         {row['genre'].title()}</li>"""
 
                     content += "</ul>"
 
                     st.markdown(content, unsafe_allow_html=True)
+                    st.write('')
 
-                create_price_graph(filtered_data)
             elif track.strip(' ') == '':
                 pass
             else:
                 st.write('Album/Track not found')
 
         with cols[1]:
-            if len(filtered_data) > 0:
-                create_country_graph(filtered_data)
+            if len(track_data) > 0:
 
-                filtered_all_data = non_duplicate_df[non_duplicate_df['item_name'] == track]
-                most_recent_sale = filtered_data[filtered_data['sale_time']
-                                                 == filtered_data['sale_time'].max()]
-
-                st.write("")
-
+                most_recent_sale = track_data[track_data['sale_time']
+                                              == track_data['sale_time'].max()]
                 st.markdown(
                     f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
                     Most Recent Price: {'${:.2f}'.format(most_recent_sale.iloc[0]['amount'] / 100)}
-                    </div>""",
-                    unsafe_allow_html=True)
-
-                filtered_track_data = non_duplicate_df[non_duplicate_df['item_name'] == track]
-                st.markdown(
-                    f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
-                    Total Copies Sold: {len(filtered_track_data)}</div>""",
+                    </div>
+                    """,
                     unsafe_allow_html=True)
 
                 st.markdown(
                     f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
-                    Highest selling Price: {'${:.2f}'.format(filtered_all_data['amount'].max() /100)}
+                    Total Copies Sold: {len(track_data)}</div>""",
+                    unsafe_allow_html=True)
+
+                st.markdown(
+                    f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
+                    Highest selling Price: {'${:.2f}'.format(track_data['amount'].max() /100)}
                     </div>""",
                     unsafe_allow_html=True)
+
+        cols = st.columns(2)
+
+        with cols[0]:
+            if len(track_data) > 0:
+                st.write('')
+                loading_price_graph(track_data)
+
+        with cols[1]:
+            if len(track_data) > 0:
+                loading_country_graph(track_data)
 
     with st.container(border=True):
 
         st.subheader(
             'Analysis of Specific Artists')
+
+        artist = st.text_input('Search for an Artist')
+
+        artist_data = get_artist_data(
+            connection, start_timestamp, end_timestamp, artist)
+        artist_data = artist_data.drop_duplicates(
+            subset=['artist', 'amount', 'country', 'sale_time', 'item_name'])
+
         columns = st.columns(2)
         with columns[0]:
-            artist = st.text_input('Search for an Artist')
-            filtered_artist = filtered_df[filtered_df['artist'] == artist]
-            if len(filtered_artist) > 0:
-                filtered_artist = filtered_artist.drop_duplicates(
-                    subset=['sale_time', 'amount', 'genre', 'item_name', 'artist'])
+            if len(artist_data) > 0:
 
-                total_made = filtered_artist['amount'].sum()
+                total_made = artist_data['amount'].sum()
                 st.markdown(
                     f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
                     Total Made: {'${:.2f}'.format(total_made / 100)}</div>""",
                     unsafe_allow_html=True)
 
-                top_countries = filtered_artist['country'].value_counts(
+                top_countries = artist_data['country'].value_counts(
                 ).reset_index()
                 st.markdown(
                     f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
                     Top Country: {top_countries['country'].iloc[0]}</div>""",
                     unsafe_allow_html=True)
 
-                top_genre = filtered_artist['genre'].value_counts(
+                top_genre = artist_data['genre'].value_counts(
                 ).reset_index()
                 st.markdown(
                     f"""<div style='padding: 4px; font-weight: bold; font-size: 20px'>
                     Top Genre: {top_genre['genre'].iloc[0].title()}</div>""",
                     unsafe_allow_html=True)
+
             elif artist.strip(' ') == '':
                 pass
 
@@ -397,7 +556,7 @@ if __name__ == "__main__":
                 st.write('Artist not found')
 
         with columns[1]:
-            if len(filtered_artist) > 0:
+            if len(artist_data) > 0:
                 response = get(
                     f"https://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist={artist}&api_key={environ['API_KEY']}&format=json",
                     timeout=100)
@@ -411,20 +570,11 @@ if __name__ == "__main__":
                     string += "</ul>"
                     st.markdown(string, unsafe_allow_html=True)
 
-        if len(filtered_artist) > 0:
-            create_album_track_graph(filtered_artist)
+        if len(artist_data) > 0:
+            st.write('')
+            loading_album_track_graph(artist_data)
 
     with st.container(border=True):
-        st.subheader(
-            'Country/Genre heat map')
-
-        top_genres = filtered_duplicate_data['genre'].value_counts(
-        ).reset_index()
-        top_genre = top_genres['genre'].iloc[0]
-
-        selected_genre = st.selectbox(
-            "Select a Genre", [top_genre] + list(filtered_duplicate_data['genre'].unique()))
-
-        genre_filtered_data = filtered_duplicate_data[filtered_duplicate_data['genre']
-                                                      == selected_genre]
-        create_heat_map_graph(genre_filtered_data)
+        genre_and_countries = loading_genre_and_countries(
+            connection, start_timestamp, end_timestamp)
+        create_heat_map_section(genre_and_countries)
