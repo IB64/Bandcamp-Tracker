@@ -71,8 +71,8 @@ resource "aws_iam_policy" "event_schedule_policy"{
                     "states:StartExecution"
                 ],
                 "Resource": [
-                    "${aws_ecs_task_definition.bandcamp_pipeline_taskdef.arn}",
-                    "${aws_lambda_function.bandcamp_report_lambda.arn}"
+                    "${aws_ecs_task_definition.bandcamp_pipeline_taskdef.arn}"
+                    #"${aws_lambda_function.bandcamp_report_lambda.arn}"
                 ],
                 "Condition": {
                     "ArnLike": {
@@ -106,57 +106,57 @@ resource "aws_iam_policy_attachment" "event_schedule_attachment" {
 
 # # Create Dashboard Security Group
 
-resource "aws_security_group" "dashboard-sg" {
-  name        = "c9-bandcamp-dashboard-sg"
-  description = "Allow inbound Postgres traffic"
-  vpc_id      = var.VPC_ID
+# resource "aws_security_group" "dashboard-sg" {
+#   name        = "c9-bandcamp-dashboard-sg"
+#   description = "Allow inbound Postgres traffic"
+#   vpc_id      = var.VPC_ID
 
-  ingress {
-    description      = "Postgres access"
-    from_port        = 8501
-    to_port          = 8501
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
+#   ingress {
+#     description      = "Postgres access"
+#     from_port        = 8501
+#     to_port          = 8501
+#     protocol         = "tcp"
+#     cidr_blocks      = ["0.0.0.0/0"]
+#   }
+#   egress {
+#     from_port   = 0
+#     to_port     = 0
+#     protocol    = "-1"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+# }
 
 # # Create Database Security Group
-resource "aws_security_group" "database-sg" {
-  name        = "c9-bandcamp-database-sg"
-  description = "Allow inbound Postgres traffic"
-  vpc_id      = var.VPC_ID
+# resource "aws_security_group" "database-sg" {
+#   name        = "c9-bandcamp-database-sg"
+#   description = "Allow inbound Postgres traffic"
+#   vpc_id      = var.VPC_ID
 
-  ingress {
-    description      = "Postgres access"
-    from_port        = 5432
-    to_port          = 5432
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-  }
-}
+#   ingress {
+#     description      = "Postgres access"
+#     from_port        = 5432
+#     to_port          = 5432
+#     protocol         = "tcp"
+#     cidr_blocks      = ["0.0.0.0/0"]
+#   }
+# }
 
 # # Create Database
-resource "aws_db_instance" "bandcamp_db" {
-  allocated_storage            = 10
-  db_name                      = var.DB_NAME
-  identifier                   = "c9-bandcamp-database"
-  engine                       = "postgres"
-  engine_version               = "15.3"
-  instance_class               = "db.t3.micro"
-  publicly_accessible          = true
-  performance_insights_enabled = false
-  skip_final_snapshot          = true
-  db_subnet_group_name         = "public_subnet_group"
-  vpc_security_group_ids       = [aws_security_group.database-sg.id]
-  username                     = var.DB_USER
-  password                     = var.DB_PASSWORD
-}
+# resource "aws_db_instance" "bandcamp_db" {
+#   allocated_storage            = 10
+#   db_name                      = var.DB_NAME
+#   identifier                   = "c9-bandcamp-database"
+#   engine                       = "postgres"
+#   engine_version               = "15.3"
+#   instance_class               = "db.t3.micro"
+#   publicly_accessible          = true
+#   performance_insights_enabled = false
+#   skip_final_snapshot          = true
+#   db_subnet_group_name         = "public_subnet_group"
+#   vpc_security_group_ids       = [aws_security_group.database-sg.id]
+#   username                     = var.DB_USER
+#   password                     = var.DB_PASSWORD
+# }
 
 
 # # Create Pipeline Task Definition
@@ -210,92 +210,92 @@ resource "aws_ecs_task_definition" "bandcamp_pipeline_taskdef" {
 
 # Create Lambda Function for Report Script
 
-resource "aws_lambda_function" "bandcamp_report_lambda" {
-    function_name = "c9-bandcamp-report-lambda"
-    role = aws_iam_role.lambda_role.arn
-    image_uri = "129033205317.dkr.ecr.eu-west-2.amazonaws.com/c9-bandcamp-report:latest"
-    package_type = "Image"
-    environment {
-      variables = {
-        "DB_IP": var.DB_IP,
-        "DB_NAME": var.DB_NAME,
-        "DB_PASSWORD": var.DB_PASSWORD,
-        "DB_PORT": var.DB_PORT,
-        "DB_USER": var.DB_USER
-      }
-    }
-}
+# resource "aws_lambda_function" "bandcamp_report_lambda" {
+#     function_name = "c9-bandcamp-report-lambda"
+#     role = aws_iam_role.lambda_role.arn
+#     image_uri = "129033205317.dkr.ecr.eu-west-2.amazonaws.com/c9-bandcamp-report:latest"
+#     package_type = "Image"
+#     environment {
+#       variables = {
+#         "DB_IP": var.DB_IP,
+#         "DB_NAME": var.DB_NAME,
+#         "DB_PASSWORD": var.DB_PASSWORD,
+#         "DB_PORT": var.DB_PORT,
+#         "DB_USER": var.DB_USER
+#       }
+#     }
+# }
 
 # Create Dashboard Task Definition
 
-resource "aws_ecs_task_definition" "bandcamp_dashboard_taskdef" {
-    family = "c9-bandcamp-dashboard-td"
-    requires_compatibilities = ["FARGATE"]
-    network_mode = "awsvpc"
-    container_definitions = jsonencode([
-    {
-        "name": "bandcamp-dashboard-td",
-        "image": "129033205317.dkr.ecr.eu-west-2.amazonaws.com/c9-bandcamp-dashboard:latest",
-        "essential": true,
-        "portMappings": [{
-            "containerPort": 8501,
-            "hostPort": 8501
-        }]
-        "environment": [
-            {
-                "name": "DB_IP",
-                "value": var.DB_IP
-            },
-            {
-                "name": "DB_USER",
-                "value": var.DB_USER
-            },
-            {
-                "name": "DB_PASSWORD",
-                "value": var.DB_PASSWORD
-            },
-            {
-                "name": "DB_NAME",
-                "value": var.DB_NAME
-            },
-            {
-                "name": "DB_PORT",
-                "value": var.DB_PORT
-            },
-            {
-                "name": "AWS_ACCESS_KEY_ID_",
-                "value": var.AWS_ACCESS_KEY_ID
-            },
-            {
-                "name": "AWS_SECRET_ACCESS_KEY_",
-                "value": var.AWS_SECRET_ACCESS_KEY
-            },
-            {
-                "name": "API_KEY",
-                "value": var.API_KEY
-            }
-        ],
-    }
-])
-    memory=2048
-    cpu = 1024
-    execution_role_arn = data.aws_iam_role.execution-role.arn
-}
+# resource "aws_ecs_task_definition" "bandcamp_dashboard_taskdef" {
+#     family = "c9-bandcamp-dashboard-td"
+#     requires_compatibilities = ["FARGATE"]
+#     network_mode = "awsvpc"
+#     container_definitions = jsonencode([
+#     {
+#         "name": "bandcamp-dashboard-td",
+#         "image": "129033205317.dkr.ecr.eu-west-2.amazonaws.com/c9-bandcamp-dashboard:latest",
+#         "essential": true,
+#         "portMappings": [{
+#             "containerPort": 8501,
+#             "hostPort": 8501
+#         }]
+#         "environment": [
+#             {
+#                 "name": "DB_IP",
+#                 "value": var.DB_IP
+#             },
+#             {
+#                 "name": "DB_USER",
+#                 "value": var.DB_USER
+#             },
+#             {
+#                 "name": "DB_PASSWORD",
+#                 "value": var.DB_PASSWORD
+#             },
+#             {
+#                 "name": "DB_NAME",
+#                 "value": var.DB_NAME
+#             },
+#             {
+#                 "name": "DB_PORT",
+#                 "value": var.DB_PORT
+#             },
+#             {
+#                 "name": "AWS_ACCESS_KEY_ID_",
+#                 "value": var.AWS_ACCESS_KEY_ID
+#             },
+#             {
+#                 "name": "AWS_SECRET_ACCESS_KEY_",
+#                 "value": var.AWS_SECRET_ACCESS_KEY
+#             },
+#             {
+#                 "name": "API_KEY",
+#                 "value": var.API_KEY
+#             }
+#         ],
+#     }
+# ])
+#     memory=2048
+#     cpu = 1024
+#     execution_role_arn = data.aws_iam_role.execution-role.arn
+# }
 
 # Create Dashboard ECS Service 
 
-resource "aws_ecs_service" "bandcamp_dashboard_service" {
-    name = "c9-bandcamp_dashboard_service"
-    cluster = data.aws_ecs_cluster.c9-cluster.id
-    task_definition = aws_ecs_task_definition.bandcamp_dashboard_taskdef.arn
-    desired_count = 1
-    launch_type = "FARGATE"
-    network_configuration {
-      subnets = ["subnet-0d0b16e76e68cf51b", "subnet-081c7c419697dec52", "subnet-02a00c7be52b00368"]
-      security_groups = [aws_security_group.dashboard-sg.id]
-      assign_public_ip = true
-    }
-}
+# resource "aws_ecs_service" "bandcamp_dashboard_service" {
+#     name = "c9-bandcamp_dashboard_service"
+#     cluster = data.aws_ecs_cluster.c9-cluster.id
+#     task_definition = aws_ecs_task_definition.bandcamp_dashboard_taskdef.arn
+#     desired_count = 1
+#     launch_type = "FARGATE"
+#     network_configuration {
+#       subnets = ["subnet-0d0b16e76e68cf51b", "subnet-081c7c419697dec52", "subnet-02a00c7be52b00368"]
+#       security_groups = [aws_security_group.dashboard-sg.id]
+#       assign_public_ip = true
+#     }
+# }
 
 # Create Pipeline EventBridge Schedule
 
@@ -327,17 +327,17 @@ resource "aws_scheduler_schedule" "bandcamp_pipeline_schedule" {
 
 # Create Report Script EventBridge Schedule
 
-resource "aws_scheduler_schedule" "bandcamp_report_schedule" {
-  name = "c9-bandcamp-report-schedule"
+# resource "aws_scheduler_schedule" "bandcamp_report_schedule" {
+#   name = "c9-bandcamp-report-schedule"
 
-  flexible_time_window {
-    mode = "OFF"
-  }
+#   flexible_time_window {
+#     mode = "OFF"
+#   }
 
-  schedule_expression = "cron(0 9 * * ? *)"
+#   schedule_expression = "cron(0 9 * * ? *)"
 
-  target {
-    arn      = aws_lambda_function.bandcamp_report_lambda.arn
-    role_arn = aws_iam_role.event_schedule_role.arn
-  }
-}
+#   target {
+#     arn      = aws_lambda_function.bandcamp_report_lambda.arn
+#     role_arn = aws_iam_role.event_schedule_role.arn
+#   }
+# }

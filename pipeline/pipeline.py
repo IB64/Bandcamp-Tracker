@@ -6,8 +6,7 @@ from dotenv import load_dotenv
 
 from extract import load_sales_data, extract_data_from_json
 from transform import clean_dataframe, convert_to_df
-from load import get_db_connection, load_data
-from new_load import load
+from load import get_db_connection, load
 
 if __name__ == "__main__":
     start = perf_counter()
@@ -26,8 +25,7 @@ if __name__ == "__main__":
     # Load
     load_dotenv()
     con = get_db_connection()
-    # load_data(clean_data_exploded, clean_data, con)
-    load(con, clean_data_exploded)
+    load(con, clean_data_exploded, clean_data)
     print("Loaded!", perf_counter() - start)
 
     print(f"Time taken: {perf_counter() - start}")
