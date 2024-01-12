@@ -7,6 +7,8 @@ import spacy
 DNB = ['Drum & Bass', 'Dnb', 'Drum N Bass']
 RNB = ['Rnb', 'R&B']
 FEATURING = ["ft.", "featuring"]
+VARIOUS = ["various artists", "various", "various artist",
+           "vaarious"]
 NLP_MODEL = spacy.load("en_core_web_sm")
 EXTENDED_ASCII_RANGE = 255
 
@@ -75,6 +77,9 @@ def clean_artists(name: str) -> str:
     if has_special_characters(name):
         return pd.NaT
 
+    if name.lower() in VARIOUS:
+        return pd.NaT
+
     for word in FEATURING:
         if word in name:
             artists = name.split(f" {word}")
@@ -88,6 +93,8 @@ def clean_titles(name: str) -> str:
     If special characters are detected, then change to "na"
     """
     if has_special_characters(name):
+        return pd.NaT
+    if name.lower() == "untitled":
         return pd.NaT
     return name.strip()
 
