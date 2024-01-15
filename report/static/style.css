@@ -1,6 +1,6 @@
 body {
   background: white;
-  font-family: serif;
+  font-family: 'Open Sans';
 }
 main {
   background: white;
@@ -12,13 +12,13 @@ h1.title {
   font-size: 64px;
   text-align: center;
   color: black;
-  font-family: serif;
+  font-family: t;
 }
 h1.date {
   font-size: 37px;
   text-align: center;
   color: black;
-  font-family: serif;
+  font-family: 'Open Sans';
 }
 .new-page {
   page-break-before: always;
@@ -27,20 +27,20 @@ h2.header {
   font-size: 33px;
   text-align: center;
   color: black;
-  font-family: serif;
+  font-family: 'Open Sans';
   text-decoration: underline;
 }
 p {
   font-size: 15px;
   text-align: left;
   color: black;
-  font-family: serif;
+  font-family: 'Open Sans';
 }
 p.contents {
   font-size: 15px;
   text-align: center;
   color: black;
-  font-family: serif;
+  font-family: 'Open Sans';
 }
 img.title {
     position: absolute;
@@ -87,7 +87,7 @@ h3.subtitle{
   font-size: 20px;
   text-align: center;
   color: black;
-  font-family: serif;
+  font-family: 'Open Sans';
   text-decoration: underline;
 }
 .footer {
